@@ -12,9 +12,9 @@ const connectDB = async () => {
       autoIndex: true, 
     });
 
-    console.log('[db] MongoDB connected successfully');
+    console.log('[db] -> MongoDB connected successfully');
   } catch (error) {
-    console.error('[db] MongoDB connection error:', error.message);
+    console.error('[db] -> MongoDB connection error:', error.message);
     process.exit(1); 
   }
 };
