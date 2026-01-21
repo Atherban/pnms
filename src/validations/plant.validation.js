@@ -2,16 +2,16 @@ const Joi = require("joi");
 
 const createPlantSchema = Joi.object({
   name: Joi.string().trim().required(),
-
-  category: Joi.string()
-    .valid("FLOWER", "FRUIT", "INDOOR", "OUTDOOR")
-    .required(),
-
+  category: Joi.string().valid("FLOWER", "FRUIT", "INDOOR", "OUTDOOR").required(),
   price: Joi.number().min(0).required(),
-
   quantityAvailable: Joi.number().integer().min(0).required()
 });
 
+const updateQuantitySchema = Joi.object({
+  quantityChange: Joi.number().integer().required()
+});
+
 module.exports = {
-  createPlantSchema
+  createPlantSchema,
+  updateQuantitySchema
 };

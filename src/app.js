@@ -1,6 +1,7 @@
 const express = require("express");
 const helmet = require("helmet");
 const errorHandler = require("./middlewares/errorHandler.middleware");
+const plantRoutes = require("./routes/plant.routes");
 
 const app = express();
 
@@ -12,9 +13,8 @@ app.get("/health", (req, res) => {
   res.status(200).json({ status: "OK" });
 });
 
-// routes go here
-// app.use("/api/plants", plantRoutes);
 
+app.use("/api/plants", plantRoutes);
 
 app.use(errorHandler);
 
