@@ -6,6 +6,7 @@ const seedRoutes = require("./routes/seed.routes");
 const sowingRoutes = require("./routes/sowing.routes");
 const germinationRoutes = require("./routes/germination.routes");
 const saleRoutes = require("./routes/sale.routes");
+const profitRoutes = require("./routes/profit.routes");
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.get("/health", (req, res) => {
 });
 
 
+app.use("/api/profit", profitRoutes);
 app.use("/api/sales", saleRoutes);
 app.use("/api/plants", plantRoutes);
 app.use("/api/seeds", seedRoutes);

@@ -44,4 +44,6 @@ const labourSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+labourSchema.index({ date: 1 });
+
 module.exports = mongoose.model("Labour", labourSchema);
