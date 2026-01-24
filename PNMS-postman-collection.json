@@ -1,0 +1,147 @@
+{
+  "info": {
+    "name": "Plant Nursery Management System - Backend API",
+    "description": "API collection to demonstrate inventory, seed lifecycle, sales transactions, and profit reporting.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/health"
+      }
+    },
+    {
+      "name": "Plant Module",
+      "item": [
+        {
+          "name": "Create Plant",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Rose Plant\",\n  \"category\": \"FLOWER\",\n  \"price\": 120,\n  \"quantityAvailable\": 10\n}"
+            },
+            "url": "{{baseUrl}}/api/plants"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.environment.set(\"plantId\", pm.response.json()._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get All Plants",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/plants"
+          }
+        },
+        {
+          "name": "Update Plant Quantity",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantityChange\": -2\n}"
+            },
+            "url": "{{baseUrl}}/api/plants/{{plantId}}/quantity"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Seed Lifecycle",
+      "item": [
+        {
+          "name": "Create Seed",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Tomato Seeds\",\n  \"category\": \"VEGETABLE\",\n  \"supplierName\": \"Agro Supplier\",\n  \"totalPurchased\": 100,\n  \"purchaseDate\": \"2026-01-01\",\n  \"expiryDate\": \"2026-12-31\"\n}"
+            },
+            "url": "{{baseUrl}}/api/seeds"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.environment.set(\"seedId\", pm.response.json()._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sow Seeds",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"seedId\": \"{{seedId}}\",\n  \"totalSeedsSown\": 30,\n  \"sowingDate\": \"2026-01-20\"\n}"
+            },
+            "url": "{{baseUrl}}/api/sowing"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.environment.set(\"sowingId\", pm.response.json()._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Record Germination",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sowingId\": \"{{sowingId}}\",\n  \"germinatedSeeds\": 22,\n  \"germinationDate\": \"2026-01-25\"\n}"
+            },
+            "url": "{{baseUrl}}/api/germination"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sales & Profit",
+      "item": [
+        {
+          "name": "Create Sale (Transactional)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"plantId\": \"{{plantId}}\",\n      \"quantity\": 2\n    }\n  ],\n  \"paymentMode\": \"UPI\"\n}"
+            },
+            "url": "{{baseUrl}}/api/sales"
+          }
+        },
+        {
+          "name": "Profit Report",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/profit?startDate=2026-01-01&endDate=2026-12-31"
+          }
+        }
+      ]
+    }
+  ]
+}

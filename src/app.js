@@ -18,7 +18,6 @@ app.get("/health", (req, res) => {
   res.status(200).json({ status: "OK" });
 });
 
-
 app.use("/api/profit", profitRoutes);
 app.use("/api/sales", saleRoutes);
 app.use("/api/plants", plantRoutes);

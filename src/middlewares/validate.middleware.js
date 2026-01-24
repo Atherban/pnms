@@ -1,18 +1,20 @@
-const statusCode = require("../enums/statusCode");  
+const ApiError = require("../exceptions/ApiError");
+const statusCode = require("../enums/statusCode");
 
 const validate = (schema, property = "body") => {
   return (req, res, next) => {
     const { error, value } = schema.validate(req[property], {
-      abortEarly: true,
+      abortEarly: false,
       stripUnknown: true
     });
 
     if (error) {
-      return res.status(statusCode.BAD_REQUEST).json({
-        message: error.details[0]?.message || "Validation Error"
-      });
+      throw new ApiError(
+        statusCode.BAD_REQUEST,
+        error.details.map(d => d.message).join(", ")
+      );
     }
-
+    
     req[property] = value;
     next();
   };

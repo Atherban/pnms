@@ -19,13 +19,13 @@
 			"com.tldraw.shape.group": 0,
 			"com.tldraw.shape.text": 4,
 			"com.tldraw.shape.bookmark": 2,
-			"com.tldraw.shape.draw": 3,
+			"com.tldraw.shape.draw": 4,
 			"com.tldraw.shape.geo": 11,
 			"com.tldraw.shape.note": 10,
 			"com.tldraw.shape.line": 5,
 			"com.tldraw.shape.frame": 1,
 			"com.tldraw.shape.arrow": 8,
-			"com.tldraw.shape.highlight": 2,
+			"com.tldraw.shape.highlight": 3,
 			"com.tldraw.shape.embed": 4,
 			"com.tldraw.shape.image": 5,
 			"com.tldraw.shape.video": 4,
@@ -185,8 +185,8 @@
 			"typeName": "binding"
 		},
 		{
-			"x": -194.96296296296293,
-			"y": 215.43209876543216,
+			"x": -513.9629629629629,
+			"y": 159.43209876543216,
 			"rotation": 0,
 			"isLocked": false,
 			"opacity": 1,
@@ -426,9 +426,9 @@
 			"typeName": "binding"
 		},
 		{
-			"x": 380.14814814814804,
-			"y": 190.19204389574747,
-			"z": 0.7290000000000001,
+			"x": 574.7176997599452,
+			"y": 153.78347380458894,
+			"z": 1,
 			"meta": {},
 			"id": "camera:page:page",
 			"typeName": "camera"
@@ -701,6 +701,8 @@
 			"editingShapeId": null,
 			"croppingShapeId": null,
 			"selectedShapeIds": [
+				"shape:5UdsAeQDoRs4txWtx6QI4",
+				"shape:F3fJFzeMhjAg9cFKy5oWc",
 				"shape:fG3osAt58xj27Q6BGyJlV"
 			],
 			"hoveredShapeId": null,
@@ -1030,8 +1032,8 @@
 			"typeName": "binding"
 		},
 		{
-			"x": -219.1056241426612,
-			"y": 409.9391082819286,
+			"x": -538.1056241426612,
+			"y": 353.9391082819286,
 			"rotation": 0,
 			"isLocked": false,
 			"opacity": 1,
@@ -1516,8 +1518,8 @@
 			"typeName": "shape"
 		},
 		{
-			"x": -198.66666666666666,
-			"y": -24.074074074073962,
+			"x": -517.6666666666666,
+			"y": -80.07407407407396,
 			"rotation": 0,
 			"isLocked": false,
 			"opacity": 1,
@@ -1546,12 +1548,7 @@
 		{
 			"followingUserId": null,
 			"opacityForNextShape": 1,
-			"stylesForNextShape": {
-				"tldraw:geo": "rectangle",
-				"tldraw:dash": "draw",
-				"tldraw:size": "s",
-				"tldraw:color": "red"
-			},
+			"stylesForNextShape": {},
 			"brush": null,
 			"scribbles": [],
 			"cursor": {
@@ -1565,8 +1562,8 @@
 			"screenBounds": {
 				"x": 0,
 				"y": 0,
-				"w": 1563,
-				"h": 920
+				"w": 1572,
+				"h": 966
 			},
 			"insets": [
 				false,

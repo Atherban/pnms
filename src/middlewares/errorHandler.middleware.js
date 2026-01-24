@@ -1,9 +1,19 @@
 const errorHandler = (err, req, res, next) => {
-  const statusCode = err.statusCode || 500;
-  const message = err.message || "Internal Server Error";
+  const isOperational = err.isOperational === true;
 
-  if (process.env.NODE_ENV !== "production") {
-    console.error(err);
+  const statusCode = isOperational ? err.statusCode : 500;
+
+  const message = isOperational
+    ? err.message
+    : "Something went wrong. Please try again later.";
+
+  if (!isOperational) {
+    console.error({
+      message: err.message,
+      stack: err.stack,
+      path: req.originalUrl,
+      method: req.method
+    });
   }
 
   res.status(statusCode).json({
