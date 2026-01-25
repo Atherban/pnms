@@ -5,50 +5,62 @@ const seedSchema = new mongoose.Schema(
     name: {
       type: String,
       required: true,
-      trim: true,
+      trim: true
     },
 
     category: {
       type: String,
-      required: true,
+      enum: ["VEGETABLE", "FLOWER", "FRUIT", "HERB"],
+      required: true
     },
 
     supplierName: {
       type: String,
       required: true,
+      trim: true
     },
 
     totalPurchased: {
       type: Number,
       required: true,
-      min: 0,
+      min: 1
     },
 
     seedsUsed: {
       type: Number,
-      required: true,
-      min: 0,
       default: 0,
+      min: 0
     },
 
     purchaseDate: {
       type: Date,
-      required: true,
+      required: true
     },
 
     expiryDate: {
       type: Date,
-      required: true,
+      required: true
     },
 
     images: [
       {
-        type: String,
-        trim: true,
-      },
+        fileName: {
+          type: String,
+          required: true
+        },
+        uploadedAt: {
+          type: Date,
+          default: Date.now
+        }
+      }
     ],
+
+    isDeleted: {
+      type: Boolean,
+      default: false
+    }
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 module.exports = mongoose.model("Seed", seedSchema);
