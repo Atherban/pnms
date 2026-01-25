@@ -7,11 +7,18 @@ const createPlantSchema = Joi.object({
   quantityAvailable: Joi.number().integer().min(0).required()
 });
 
+const updatePlantSchema = Joi.object({
+  name: Joi.string().optional(),
+  price: Joi.number().optional(),
+  category: Joi.string().optional()
+});
+
 const updateQuantitySchema = Joi.object({
   quantityChange: Joi.number().integer().required()
 });
 
 module.exports = {
   createPlantSchema,
+  updatePlantSchema,
   updateQuantitySchema
 };
