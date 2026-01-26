@@ -1,14 +1,38 @@
+const statusCode = require("../enums/statusCode");
 const saleService = require("../services/sale.service");
 
+// create sale
 const createSale = async (req, res, next) => {
   try {
     const sale = await saleService.createSale(req.body);
-    res.status(201).json(sale);
+    res.status(statusCode.CREATED).json(sale);
   } catch (error) {
     next(error);
   }
 };
 
+// get all sales
+const getAllSales = async(req,res,next)=>{
+  try {
+    const sales = await saleService.getAllSales();
+    res.status(statusCode.OK).json(sales)
+  } catch (error) {
+    next(error)
+  }
+}
+
+// get sale by id
+const getSalesById = async(req,res,next)=>{
+  try {
+    const sale = await saleService.getSalesById(req.params.id);
+    res.status(statusCode.OK).json(sale);
+  } catch (error) {
+    next(error)
+  }
+}
+
 module.exports = {
-  createSale
+  createSale,
+  getAllSales,
+  getSalesById
 };

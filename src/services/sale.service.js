@@ -4,6 +4,7 @@ const Plant = require("../models/Plant.model");
 const ApiError = require("../exceptions/ApiError");
 const statusCode = require("../enums/statusCode");
 
+// create sale
 const createSale = async (data) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -60,6 +61,28 @@ const createSale = async (data) => {
   }
 };
 
+// get all sales
+const getAllSales = async()=>{
+  return await Sale.find()
+  .sort({ createdAt: -1 })
+  .populate('items.plantId')
+  .populate('customer')
+}
+
+// get sale by ID
+const getSalesById = async(saleId) =>{
+
+  const sale = await Sale.findById(saleId)
+  .populate('customer', "name email", 'items.plantId');
+
+  if(!sale){
+    throw new ApiError(statusCode.NOT_FOUND, "Sale not found")
+  }
+  return sale;
+}
+
 module.exports = {
-  createSale
+  createSale,
+  getAllSales,
+  getSalesById
 };
