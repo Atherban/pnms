@@ -5,7 +5,10 @@ const userService = require("../services/user.service");
 const createUser = async (req, res, next) => {
   try {
     const user = await userService.createUser(req.body, req.user);
-    res.status(statusCode.CREATED).json(user);
+    res.status(statusCode.CREATED).json({
+        message: "User created successfully",
+        data: user
+    });
   } catch (err) {
     next(err);
   }
@@ -15,7 +18,10 @@ const createUser = async (req, res, next) => {
 const getUsers = async (req, res, next) => {
   try {
     const users = await userService.getUsers();
-    res.status(statusCode.OK).json(users);
+    res.status(statusCode.OK).json({
+        message: "Users retrieved successfully",
+        data: users
+    });
   } catch (err) {
     next(err);
   }
