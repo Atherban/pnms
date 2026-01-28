@@ -1,220 +1,198 @@
-# Plant Nursery Management System (PNMS) – Backend
+# 🌱 Plant Nursery Management System (PNMS) – Backend
 
 ## Overview
 
-This backend powers the **Plant Nursery Management System**, designed with **production-grade architecture** and **domain-driven decisions**.
+PNMS is a **production-grade backend system** for managing plant nursery operations such as inventory, seed procurement, sowing, germination, sales, profit analysis, and **admin-controlled user management**.
 
-The system manages:
+This backend follows **enterprise standards**:
 
-* Master data (Plants, Seeds)
-* Inventory-affecting events (Sales, Sowing, Germination)
-* Derived reports (Profit)
-* Media uploads (Images)
-
-The backend follows **best practices**:
-
-* Layered architecture (Routes → Controllers → Services → Models)
-* Strict validation
-* Transaction safety for financial & inventory operations
-* No blind CRUD on historical data
+* JWT-based Authentication (AuthN)
+* Role-Based Access Control (AuthZ / RBAC)
+* Auditability (who did what and when)
+* Transactional integrity (MongoDB transactions)
+* Clean architecture (Route → Controller → Service → Model)
 
 ---
 
-## Tech Stack
+## Core Principles
 
-* **Node.js + Express** – API framework
-* **MongoDB + Mongoose** – Database & ODM
-* **Joi** – Request validation
-* **Multer** – File uploads
-* **Helmet** – Security headers
-* **Docker (Replica Set)** – Transaction support
+### Authentication vs Authorization
+
+* **Authentication**: Verifies who the user is (JWT)
+* **Authorization**: Verifies what the user is allowed to do (RBAC)
+
+There is **no public signup**. Users are **provisioned by ADMIN users only**.
 
 ---
 
-## Folder Structure (Core)
+## Roles
+
+| Role   | Description                         |
+| ------ | ----------------------------------- |
+| ADMIN  | Full system access, user management |
+| STAFF  | Operational actions (sales, sowing) |
+| VIEWER | Read-only access                    |
+
+---
+
+## Architecture
 
 ```
 src/
- ├── app.js
- ├── server.js
  ├── routes/
  ├── controllers/
  ├── services/
  ├── models/
- ├── validations/
  ├── middlewares/
- ├── exceptions/
+ ├── validations/
+ └── exceptions/
 ```
 
-Each layer has a **single responsibility**.
-
----
-
-## Architecture Flow
+Each request flows as:
 
 ```
-HTTP Request
-   ↓
-Route (URL + method)
-   ↓
-Validation (Joi)
-   ↓
-Controller (request orchestration)
-   ↓
-Service (business logic)
-   ↓
-Model (database)
+Route → authenticate → authorize → validate → controller → service → model
 ```
 
 ---
 
-## Modules & CRUD Policy
+## Authentication Flow
 
-### Modules WITH CRUD
+1. ADMIN creates users via `/api/users`
+2. User logs in via `/api/auth/login`
+3. JWT issued
+4. JWT sent in `Authorization: Bearer <token>`
+5. Middleware attaches `req.user = { userId, role }`
 
-| Module | Reason                  |
-| ------ | ----------------------- |
-| Plant  | Master inventory entity |
-| Seed   | Master inventory entity |
+---
 
-### Modules WITHOUT CRUD
+## User Management (Admin Only)
 
-| Module      | Reason                            |
-| ----------- | --------------------------------- |
-| Sale        | Financial transaction (immutable) |
-| Seed Sowing | Physical event                    |
-| Germination | Observation                       |
-| Profit      | Derived data                      |
+| Method | Endpoint       | Description    |
+| ------ | -------------- | -------------- |
+| POST   | /api/users     | Create user    |
+| GET    | /api/users     | Get all users  |
+| GET    | /api/users/:id | Get user by ID |
+| PATCH  | /api/users/:id | Update user    |
+| DELETE | /api/users/:id | Disable user   |
+
+Disabled users cannot log in.
 
 ---
 
 ## Plant Module
 
-### Responsibilities
+| Method | Endpoint                     | Role  |
+| ------ | ---------------------------- | ----- |
+| POST   | /api/plants                  | ADMIN |
+| GET    | /api/plants                  | ALL   |
+| GET    | /api/plants/:id              | ALL   |
+| PATCH  | /api/plants/:id              | ADMIN |
+| PATCH  | /api/plants/:id/quantity     | ADMIN |
+| PATCH  | /api/plants/:id/out-of-stock | ADMIN |
+| DELETE | /api/plants/:id              | ADMIN |
 
-* Manage plant inventory
-* Store images
-* Allow controlled updates
-
-### Endpoints
-
-```
-POST   /api/plants
-GET    /api/plants
-GET    /api/plants/:id
-PATCH  /api/plants/:id
-DELETE /api/plants/:id 
-POST   /api/uploads/plants/:id/image
-```
+Plants store audit fields: `createdBy`, `updatedBy`.
 
 ---
 
 ## Seed Module
 
-### Responsibilities
+| Method | Endpoint       | Role  |
+| ------ | -------------- | ----- |
+| POST   | /api/seeds     | ADMIN |
+| GET    | /api/seeds     | ALL   |
+| GET    | /api/seeds/:id | ALL   |
+| PATCH  | /api/seeds/:id | ADMIN |
+| DELETE | /api/seeds/:id | ADMIN |
 
-* Manage seed batches
-* Track usage & expiry
-* Attach images
+---
 
-### Endpoints
+## Sowing Module (Transactional)
 
-```
-POST   /api/seeds
-GET    /api/seeds
-GET    /api/seeds/:id
-PATCH  /api/seeds/:id
-DELETE /api/seeds/:id (soft)
-POST   /api/seeds/:id/image
-```
+Consumes seed inventory.
+
+| Method | Endpoint    | Role         |
+| ------ | ----------- | ------------ |
+| POST   | /api/sowing | ADMIN, STAFF |
+| GET    | /api/sowing | ADMIN        |
+
+Audit fields: `performedBy`, `roleAtTime`.
+
+---
+
+## Germination Module (Immutable)
+
+| Method | Endpoint         | Role         |
+| ------ | ---------------- | ------------ |
+| POST   | /api/germination | ADMIN, STAFF |
+| GET    | /api/germination | ADMIN        |
+
+Germination records are **observational** and do not affect inventory.
 
 ---
 
 ## Sales Module (Transactional)
 
-### Key Rules
+| Method | Endpoint       | Role         |
+| ------ | -------------- | ------------ |
+| POST   | /api/sales     | ADMIN, STAFF |
+| GET    | /api/sales     | ADMIN        |
+| GET    | /api/sales/:id | ADMIN        |
 
-* No update or delete
-* Uses MongoDB transactions
-* Updates plant inventory atomically
+Sales:
 
-### Endpoints
-
-```
-POST /api/sales
-GET  /api/sales
-GET  /api/sales/:id
-```
+* Reduce plant inventory
+* Capture price snapshot
+* Store `performedBy` and `roleAtTime`
 
 ---
 
-## Profit Module (Read-only)
+## Profit Module
 
-### Key Rules
-
-* No CRUD
-* Calculated dynamically
-* Requires date range
-
-### Endpoint
-
-```
-GET /api/profit?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
-```
+| Method | Endpoint                        | Role  |
+| ------ | ------------------------------- | ----- |
+| GET    | /api/profit?startDate=&endDate= | ADMIN |
 
 ---
 
 ## Image Uploads
 
-* Files stored **outside project root**
-* Only metadata stored in MongoDB
-* Served via static route
+Images are stored in a **global uploads directory**.
 
-```
-/uploads/<filename>
-```
+| Entity | Endpoint                      |
+| ------ | ----------------------------- |
+| Plant  | /api/uploads/plants/:id/image |
+| Seed   | /api/seeds/:id/image          |
 
-Supported formats:
+---
 
-* JPEG
-* PNG
-* WEBP
+## Transactions & Data Integrity
+
+Modules using MongoDB transactions:
+
+* Sales
+* Sowing
+
+This guarantees **atomic operations** and prevents partial updates.
 
 ---
 
 ## Error Handling
 
-All errors flow through a **global error handler**.
+All errors flow through a centralized error handler:
 
-Standard error shape:
-
-```json
-{
-  "success": false,
-  "message": "Error description"
-}
-```
+* Validation errors (Joi)
+* Business errors (ApiError)
+* System errors (500)
 
 ---
 
-## Environment Variables
+## Security Highlights
 
-```env
-PORT=5000
-MONGODB_URI=mongodb://localhost:27017/pnms?replicaSet=rs0
-UPLOADS_BASE_PATH=/home/user/uploads
-```
-
----
-
-## Postman Collection
-
-A complete Postman collection exists covering:
-
-* All CRUD
-* Uploads
-* Transactions
-* Error cases
-
----
+* JWT-based authentication
+* Role-based authorization
+* No public signup
+* Password hashing with bcrypt
+* Disabled users blocked at login
 

@@ -1,15 +1,15 @@
 {
   "info": {
-    "name": "PNMS - Final API Collection (Auth + RBAC)",
+    "name": "PNMS - Full Backend API (Final)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Complete, production-grade API collection for PNMS backend"
+    "description": "Complete PNMS backend collection: Auth, RBAC, Admin-only users, inventory, sowing, germination, sales, profit"
   },
   "item": [
     {
-      "name": "Auth",
+      "name": "Authentication",
       "item": [
         {
-          "name": "Login (ADMIN / STAFF)",
+          "name": "Login",
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
@@ -18,6 +18,65 @@
               "mode": "raw",
               "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"password123\"\n}"
             }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users (ADMIN ONLY)",
+      "item": [
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/users",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Staff User\",\n  \"email\": \"staff@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"STAFF\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/users"
+          }
+        },
+        {
+          "name": "Get User By ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/users/{{userId}}"
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/users/{{userId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"VIEWER\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Disable User",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/users/{{userId}}"
           }
         }
       ]
@@ -57,7 +116,22 @@
           }
         },
         {
-          "name": "Update Plant Quantity",
+          "name": "Update Plant",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/plants/{{plantId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 175\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Quantity",
           "request": {
             "method": "PATCH",
             "header": [
@@ -67,8 +141,24 @@
             "url": "{{baseUrl}}/api/plants/{{plantId}}/quantity",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"quantityChange\": 40\n}"
+              "raw": "{\n  \"quantity\": 40\n}"
             }
+          }
+        },
+        {
+          "name": "Mark Out Of Stock",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/plants/{{plantId}}/out-of-stock"
+          }
+        },
+        {
+          "name": "Delete Plant",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/plants/{{plantId}}"
           }
         }
       ]
@@ -87,16 +177,47 @@
             "url": "{{baseUrl}}/api/seeds",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Tomato Seed\",\n  \"category\": \"VEGETABLE\",\n  \"supplierName\": \"Agro Corp\",\n  \"totalPurchased\": 1000,\n  \"purchaseDate\": \"2026-01-01\",\n  \"expiryDate\": \"2026-12-31\"\n}"
+              "raw": "{\n  \"name\": \"Tomato Seed\",\n  \"supplierName\": \"Agro Corp\",\n  \"totalPurchased\": 1000,\n  \"purchaseDate\": \"2026-01-01\",\n  \"expiryDate\": \"2026-12-31\"\n}"
             }
           }
         },
         {
-          "name": "Get All Seeds",
+          "name": "Get Seeds",
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
             "url": "{{baseUrl}}/api/seeds"
+          }
+        },
+        {
+          "name": "Get Seed By ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/seeds/{{seedId}}"
+          }
+        },
+        {
+          "name": "Update Seed",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/seeds/{{seedId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"supplierName\": \"Updated Supplier\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Seed",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/seeds/{{seedId}}"
           }
         }
       ]
@@ -120,7 +241,7 @@
           }
         },
         {
-          "name": "Get All Sowings",
+          "name": "Get Sowings",
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
@@ -148,7 +269,7 @@
           }
         },
         {
-          "name": "Get All Germinations",
+          "name": "Get Germinations",
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
@@ -171,16 +292,24 @@
             "url": "{{baseUrl}}/api/sales",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"items\": [\n    { \"plantId\": \"{{plantId}}\", \"quantity\": 2 }\n  ],\n  \"paymentMode\": \"CASH\"\n}"
+              "raw": "{\n  \"items\": [{ \"plantId\": \"{{plantId}}\", \"quantity\": 2 }],\n  \"paymentMode\": \"CASH\"\n}"
             }
           }
         },
         {
-          "name": "Get All Sales",
+          "name": "Get Sales",
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
             "url": "{{baseUrl}}/api/sales"
+          }
+        },
+        {
+          "name": "Get Sale By ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/sales/{{saleId}}"
           }
         }
       ]
@@ -189,7 +318,7 @@
       "name": "Profit",
       "item": [
         {
-          "name": "Get Profit (Date Range)",
+          "name": "Get Profit",
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
