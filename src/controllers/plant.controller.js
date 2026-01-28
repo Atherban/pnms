@@ -5,7 +5,7 @@ const plantService = require("../services/plant.service");
 // Create plant
 const createPlant = async (req, res, next) => {
   try {
-    const plant = await plantService.createPlant(req.body);
+    const plant = await plantService.createPlant(req.body, req.user);
     res.status(statusCode.CREATED).json(plant);
   } catch (error) {
     next(error);
@@ -45,7 +45,7 @@ const deletePlantById = async(req,res,next)=>{
 // Update plant Details
 const updatePlantDetails = async(req,res,next)=>{
   try {
-    const plant = await plantService.updatePlantDetails(req.params.id, req.body);
+    const plant = await plantService.updatePlantDetails(req.params.id, req.body, req.user);
     res.status(statusCode.OK).json(plant);
   } catch (error) {
     next(error);

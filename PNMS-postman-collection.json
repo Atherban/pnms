@@ -1,18 +1,23 @@
 {
   "info": {
-    "name": "PNMS - Complete API Collection",
+    "name": "PNMS - Final API Collection (Auth + RBAC)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Complete production-grade API testing collection for Plant Nursery Management System"
+    "description": "Complete, production-grade API collection for PNMS backend"
   },
   "item": [
     {
-      "name": "Health",
+      "name": "Auth",
       "item": [
         {
-          "name": "Health Check",
+          "name": "Login (ADMIN / STAFF)",
           "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/health"
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"password123\"\n}"
+            }
           }
         }
       ]
@@ -24,11 +29,14 @@
           "name": "Create Plant",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
             "url": "{{baseUrl}}/api/plants",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Rose\",\n  \"category\": \"FLOWER\",\n  \"price\": 120,\n  \"quantityAvailable\": 50\n}"
+              "raw": "{\n  \"name\": \"Rose\",\n  \"category\": \"FLOWER\",\n  \"price\": 150,\n  \"quantityAvailable\": 50\n}"
             }
           }
         },
@@ -36,6 +44,7 @@
           "name": "Get All Plants",
           "request": {
             "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
             "url": "{{baseUrl}}/api/plants"
           }
         },
@@ -43,38 +52,22 @@
           "name": "Get Plant By ID",
           "request": {
             "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
             "url": "{{baseUrl}}/api/plants/{{plantId}}"
           }
         },
         {
-          "name": "Update Plant",
+          "name": "Update Plant Quantity",
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": "{{baseUrl}}/api/plants/{{plantId}}",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/plants/{{plantId}}/quantity",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"price\": 150\n}"
-            }
-          }
-        },
-        {
-          "name": "Delete Plant",
-          "request": {
-            "method": "DELETE",
-            "url": "{{baseUrl}}/api/plants/{{plantId}}"
-          }
-        },
-        {
-          "name": "Upload Plant Image",
-          "request": {
-            "method": "POST",
-            "url": "{{baseUrl}}/api/uploads/plants/{{plantId}}/image",
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                { "key": "image", "type": "file" }
-              ]
+              "raw": "{\n  \"quantityChange\": 40\n}"
             }
           }
         }
@@ -87,11 +80,14 @@
           "name": "Create Seed",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
             "url": "{{baseUrl}}/api/seeds",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Tomato Seed\",\n  \"category\": \"VEGETABLE\",\n  \"supplierName\": \"Agro Seeds\",\n  \"totalPurchased\": 1000,\n  \"purchaseDate\": \"2026-01-01\",\n  \"expiryDate\": \"2026-12-31\"\n}"
+              "raw": "{\n  \"name\": \"Tomato Seed\",\n  \"category\": \"VEGETABLE\",\n  \"supplierName\": \"Agro Corp\",\n  \"totalPurchased\": 1000,\n  \"purchaseDate\": \"2026-01-01\",\n  \"expiryDate\": \"2026-12-31\"\n}"
             }
           }
         },
@@ -99,46 +95,64 @@
           "name": "Get All Seeds",
           "request": {
             "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
             "url": "{{baseUrl}}/api/seeds"
           }
-        },
+        }
+      ]
+    },
+    {
+      "name": "Sowing",
+      "item": [
         {
-          "name": "Get Seed By ID",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/seeds/{{seedId}}"
-          }
-        },
-        {
-          "name": "Update Seed",
-          "request": {
-            "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": "{{baseUrl}}/api/seeds/{{seedId}}",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"supplierName\": \"Updated Supplier\"\n}"
-            }
-          }
-        },
-        {
-          "name": "Delete Seed",
-          "request": {
-            "method": "DELETE",
-            "url": "{{baseUrl}}/api/seeds/{{seedId}}"
-          }
-        },
-        {
-          "name": "Upload Seed Image",
+          "name": "Sow Seeds",
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/api/seeds/{{seedId}}/image",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/sowing",
             "body": {
-              "mode": "formdata",
-              "formdata": [
-                { "key": "image", "type": "file" }
-              ]
+              "mode": "raw",
+              "raw": "{\n  \"seedId\": \"{{seedId}}\",\n  \"plantId\": \"{{plantId}}\",\n  \"quantity\": 100\n}"
             }
+          }
+        },
+        {
+          "name": "Get All Sowings",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/sowing"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Germination",
+      "item": [
+        {
+          "name": "Record Germination",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/germination",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sowingId\": \"{{sowingId}}\",\n  \"germinatedSeeds\": 80\n}"
+            }
+          }
+        },
+        {
+          "name": "Get All Germinations",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/germination"
           }
         }
       ]
@@ -147,14 +161,17 @@
       "name": "Sales",
       "item": [
         {
-          "name": "Create Sale (Transactional)",
+          "name": "Create Sale",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
             "url": "{{baseUrl}}/api/sales",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"plantId\": \"{{plantId}}\",\n  \"quantity\": 2\n}"
+              "raw": "{\n  \"items\": [\n    { \"plantId\": \"{{plantId}}\", \"quantity\": 2 }\n  ],\n  \"paymentMode\": \"CASH\"\n}"
             }
           }
         },
@@ -162,6 +179,7 @@
           "name": "Get All Sales",
           "request": {
             "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
             "url": "{{baseUrl}}/api/sales"
           }
         }
@@ -171,10 +189,11 @@
       "name": "Profit",
       "item": [
         {
-          "name": "Get Profit Report",
+          "name": "Get Profit (Date Range)",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/profit"
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/profit?startDate=2026-01-01&endDate=2026-12-31"
           }
         }
       ]

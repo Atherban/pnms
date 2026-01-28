@@ -9,6 +9,7 @@ const germinationRoutes = require("./routes/germination.routes");
 const saleRoutes = require("./routes/sale.routes");
 const profitRoutes = require("./routes/profit.routes");
 const uploadRoutes = require("./routes/upload.routes");
+const authRoutes = require("./routes/auth.routes");
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.use("/api/seeds", seedRoutes);
 app.use("/api/sowing", sowingRoutes);
 app.use("/api/germination", germinationRoutes);
 app.use("/api/uploads", uploadRoutes);
+app.use("/api/auth", authRoutes);
 
 // serve uploaded files
 if (!process.env.UPLOADS_BASE_PATH) {

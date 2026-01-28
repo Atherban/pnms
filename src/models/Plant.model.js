@@ -10,7 +10,7 @@ const plantSchema = new mongoose.Schema(
 
     category: {
       type: String,
-      enum: ["FLOWER", "FRUIT", "INDOOR", "OUTDOOR"],
+      enum: ["FLOWER", "FRUIT", "INDOOR", "OUTDOOR", "VEGETABLE"],
       required: true,
     },
 
@@ -44,6 +44,16 @@ const plantSchema = new mongoose.Schema(
         },
       },
     ],
+     createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true
+    },
+
+    updatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User"
+    }
   },
   {
     timestamps: true,

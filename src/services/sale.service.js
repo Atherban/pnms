@@ -4,13 +4,14 @@ const Plant = require("../models/Plant.model");
 const ApiError = require("../exceptions/ApiError");
 const statusCode = require("../enums/statusCode");
 
-// create sale
-const createSale = async (data) => {
+// CREATE SALE (Transactional)
+const createSale = async (data, user) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
     const saleItems = [];
+    let totalAmount = 0;
 
     for (const item of data.items) {
       const plant = await Plant.findById(item.plantId).session(session);
@@ -19,32 +20,38 @@ const createSale = async (data) => {
         throw new ApiError(statusCode.BAD_REQUEST, "Plant not found");
       }
 
-      if (plant.quantityAvailable < item.quantity) {
+      if (plant.isOutOfStock || plant.quantityAvailable < item.quantity) {
         throw new ApiError(
           statusCode.BAD_REQUEST,
           `Insufficient stock for ${plant.name}`
         );
       }
 
+      // Update inventory
       plant.quantityAvailable -= item.quantity;
-      plant.status =
-        plant.quantityAvailable === 0 ? "OUT_OF_STOCK" : "AVAILABLE";
+      if (plant.quantityAvailable === 0) {
+        plant.isOutOfStock = true;
+      }
 
       await plant.save({ session });
 
       saleItems.push({
-        plant: plant._id,
+        plantId: plant._id,
         quantity: item.quantity,
         priceAtSale: plant.price
       });
+
+      totalAmount += plant.price * item.quantity;
     }
 
-    const sale = await Sale.create(
+    const [sale] = await Sale.create(
       [
         {
-          customer: data.customerId,
           items: saleItems,
-          paymentMode: data.paymentMode
+          totalAmount,
+          paymentMode: data.paymentMode,
+          performedBy: user.userId,
+          roleAtTime: user.role
         }
       ],
       { session }
@@ -53,7 +60,7 @@ const createSale = async (data) => {
     await session.commitTransaction();
     session.endSession();
 
-    return sale[0];
+    return sale;
   } catch (error) {
     await session.abortTransaction();
     session.endSession();
@@ -61,28 +68,29 @@ const createSale = async (data) => {
   }
 };
 
-// get all sales
-const getAllSales = async()=>{
-  return await Sale.find()
-  .sort({ createdAt: -1 })
-  .populate('items.plantId')
-  .populate('customer')
-}
+// GET ALL SALES
+const getAllSales = async () => {
+  return Sale.find()
+    .sort({ createdAt: -1 })
+    .populate("items.plantId", "name price")
+    .populate("performedBy", "name email");
+};
 
-// get sale by ID
-const getSalesById = async(saleId) =>{
-
+// GET SALE BY ID
+const getSaleById = async (saleId) => {
   const sale = await Sale.findById(saleId)
-  .populate('customer', "name email", 'items.plantId');
+    .populate("items.plantId", "name price")
+    .populate("performedBy", "name email");
 
-  if(!sale){
-    throw new ApiError(statusCode.NOT_FOUND, "Sale not found")
+  if (!sale) {
+    throw new ApiError(statusCode.NOT_FOUND, "Sale not found");
   }
+
   return sale;
-}
+};
 
 module.exports = {
   createSale,
   getAllSales,
-  getSalesById
+  getSaleById
 };

@@ -4,7 +4,7 @@ const saleSchema = new mongoose.Schema(
   {
     customer: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Customer"
+      ref: "Customer",
     },
 
     items: [
@@ -12,33 +12,44 @@ const saleSchema = new mongoose.Schema(
         plant: {
           type: mongoose.Schema.Types.ObjectId,
           ref: "Plant",
-          required: true
+          required: true,
         },
         quantity: {
           type: Number,
           required: true,
-          min: 1
+          min: 1,
         },
         priceAtSale: {
           type: Number,
           required: true,
-          min: 0
-        }
-      }
+          min: 0,
+        },
+      },
     ],
 
     paymentMode: {
       type: String,
       enum: ["CASH", "UPI", "ONLINE"],
-      required: true
+      required: true,
     },
 
     saleDate: {
       type: Date,
-      default: Date.now
-    }
+      default: Date.now,
+    },
+    performedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
+    roleAtTime: {
+      type: String,
+      enum: ["ADMIN", "STAFF"],
+      required: true,
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 saleSchema.index({ saleDate: 1 });

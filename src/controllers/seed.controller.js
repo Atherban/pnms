@@ -3,7 +3,7 @@ const seedService = require("../services/seed.service");
 
 const createSeed = async (req, res, next) => {
   try {
-    const seed = await seedService.createSeed(req.body);
+    const seed = await seedService.createSeed(req.body, req.user);
     res.status(statusCode.CREATED).json(seed);
   } catch (err) {
     next(err);
@@ -32,7 +32,8 @@ const updateSeedById = async (req, res, next) => {
   try {
     const seed = await seedService.updateSeedById(
       req.params.id,
-      req.body
+      req.body,
+      req.user
     );
     res.status(statusCode.OK).json(seed);
   } catch (err) {

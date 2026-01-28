@@ -9,16 +9,27 @@ const {
   updatePlantSchema,
   updateQuantitySchema,
 } = require("../validations/plant.validation");
+const authenticate = require("../middlewares/auth.middleware");
+const authorize = require("../middlewares/rbac.middleware");
 
 // Create plant
-router.post("/", validate(createPlantSchema), plantController.createPlant);
+router.post("/",
+  authenticate,
+  authorize("ADMIN"), 
+  validate(createPlantSchema), 
+  plantController.createPlant);
 
 // Get all plants
-router.get("/", plantController.getPlants);
+router.get("/",
+  authenticate,
+  authorize("ADMIN", "STAFF", "VIEWER"), 
+  plantController.getPlants);
 
 // Get plant by ID
 router.get(
   "/:id",
+  authenticate,
+  authorize("ADMIN", "STAFF", "VIEWER"), 
   validate(objectIdSchema, "params"),
   plantController.getPlantById,
 );
@@ -26,6 +37,8 @@ router.get(
 // Delete plant by ID
 router.delete(
   "/:id",
+  authenticate,
+  authorize("ADMIN"),
   validate(objectIdSchema, "params"),
   plantController.deletePlantById,
 );

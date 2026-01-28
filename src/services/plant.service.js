@@ -3,11 +3,12 @@ const ApiError = require("../exceptions/ApiError");
 
 
 // Create a new plant
-const createPlant = async (data) => {
-  const plant = await Plant.create(data);
-  return plant;
+const createPlant = async (data, user) => {
+  return Plant.create({
+    ...data,
+    createdBy: user.userId
+  });
 };
-
 
 // Get all plants
 const getAllPlants = async () => {
@@ -33,19 +34,13 @@ const deletePlantById = async(plantId) =>{
 }
 
 // Update plant details
-const updatePlantDetails = async (plantId, updateData) => {
-  const allowedFields = ["name", "price", "category"];
-  const safeUpdate = {};
-
-  for (const key of allowedFields) {
-    if (updateData[key] !== undefined) {
-      safeUpdate[key] = updateData[key];
-    }
-  }
-
+const updatePlantDetails = async (plantId, data, user) => {
   const plant = await Plant.findByIdAndUpdate(
     plantId,
-    safeUpdate,
+    {
+      ...data,
+      updatedBy: user.userId
+    },
     { new: true, runValidators: true }
   );
 
@@ -55,7 +50,6 @@ const updatePlantDetails = async (plantId, updateData) => {
 
   return plant;
 };
-
 
 // Update plant stock safely
 const updatePlantQuantity = async (plantId, quantityChange) => {

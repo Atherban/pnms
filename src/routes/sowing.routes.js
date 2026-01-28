@@ -2,9 +2,23 @@ const express = require("express");
 const router = express.Router();
 
 const sowingController = require("../controllers/sowing.controller");
-const validate = require("../middlewares/validate.middleware");
-const { sowingSchema } = require("../validations/sowing.validation");
+const authenticate = require("../middlewares/auth.middleware");
+const authorize = require("../middlewares/rbac.middleware");
 
-router.post("/", validate(sowingSchema), sowingController.sowSeeds);
+// Create sowing record
+router.post(
+  "/",
+  authenticate,
+  authorize("ADMIN", "STAFF"),
+  sowingController.sowSeeds
+);
+
+// Get all sowing records
+router.get(
+  "/",
+  authenticate,
+  authorize("ADMIN"),
+  sowingController.getSowings
+);
 
 module.exports = router;

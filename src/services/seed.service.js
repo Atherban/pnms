@@ -2,8 +2,11 @@ const Seed = require("../models/Seed.model");
 const ApiError = require("../exceptions/ApiError");
 
 // Create seed
-const createSeed = async (data) => {
-  return Seed.create(data);
+const createSeed = async (data, user) => {
+  return Seed.create({
+    ...data,
+    createdBy: user.userId
+  });
 };
 
 // Get all seeds
@@ -26,23 +29,17 @@ const getSeedById = async (seedId) => {
 };
 
 // Update seed (safe fields only)
-const updateSeedById = async (seedId, data) => {
-  const allowedFields = ["name", "supplierName", "expiryDate"];
-  const updateData = {};
-
-  for (const field of allowedFields) {
-    if (data[field] !== undefined) {
-      updateData[field] = data[field];
-    }
-  }
-
+const updateSeedById = async (seedId, data, user) => {
   const seed = await Seed.findByIdAndUpdate(
     seedId,
-    updateData,
+    {
+      ...data,
+      updatedBy: user.userId
+    },
     { new: true, runValidators: true }
   );
 
-  if (!seed || seed.isDeleted) {
+  if (!seed) {
     throw new ApiError(404, "Seed not found");
   }
 

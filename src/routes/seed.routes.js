@@ -3,43 +3,68 @@ const router = express.Router();
 
 const seedController = require("../controllers/seed.controller");
 const validate = require("../middlewares/validate.middleware");
-const { createSeedSchema, updateSeedSchema } = require("../validations/seed.validation");
+const authenticate = require("../middlewares/auth.middleware");
+const authorize = require("../middlewares/rbac.middleware");
+
+const {
+  createSeedSchema,
+  updateSeedSchema,
+} = require("../validations/seed.validation");
 const { objectIdSchema } = require("../validations/common.validation");
-const  seedUpload  = require("../middlewares/upload.middleware");
+const { upload } = require("../middlewares/upload.middleware");
 
-// Create seed
-router.post("/", validate(createSeedSchema), seedController.createSeed);
+// Create seed batch (ADMIN)
+router.post(
+  "/",
+  authenticate,
+  authorize("ADMIN"),
+  validate(createSeedSchema),
+  seedController.createSeed
+);
 
-// Get all seeds
-router.get("/", seedController.getSeeds);
+// Get all seeds (ALL ROLES)
+router.get(
+  "/",
+  authenticate,
+  authorize("ADMIN", "STAFF", "VIEWER"),
+  seedController.getSeeds
+);
 
-// Get seed by ID
+// Get seed by ID (ALL ROLES)
 router.get(
   "/:id",
+  authenticate,
+  authorize("ADMIN", "STAFF", "VIEWER"),
   validate(objectIdSchema, "params"),
   seedController.getSeedById
 );
 
-// Update seed
+// Update seed details (ADMIN)
 router.patch(
   "/:id",
+  authenticate,
+  authorize("ADMIN"),
   validate(objectIdSchema, "params"),
   validate(updateSeedSchema),
   seedController.updateSeedById
 );
 
-// Delete seed
+// Delete seed (soft delete, ADMIN)
 router.delete(
   "/:id",
+  authenticate,
+  authorize("ADMIN"),
   validate(objectIdSchema, "params"),
   seedController.deleteSeedById
 );
 
-// Upload seed image
+// Upload seed image (ADMIN)
 router.post(
   "/:id/image",
+  authenticate,
+  authorize("ADMIN"),
   validate(objectIdSchema, "params"),
-  seedUpload.single("image"),
+  upload.single("image"),
   seedController.uploadSeedImage
 );
 
