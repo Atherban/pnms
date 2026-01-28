@@ -1,41 +1,36 @@
 {
   "info": {
-    "name": "Plant Nursery Management System - Backend API",
-    "description": "API collection to demonstrate inventory, seed lifecycle, sales transactions, and profit reporting.",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    "name": "PNMS - Complete API Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Complete production-grade API testing collection for Plant Nursery Management System"
   },
   "item": [
     {
-      "name": "Health Check",
-      "request": {
-        "method": "GET",
-        "url": "{{baseUrl}}/health"
-      }
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/health"
+          }
+        }
+      ]
     },
     {
-      "name": "Plant Module",
+      "name": "Plants",
       "item": [
         {
           "name": "Create Plant",
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/plants",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Rose Plant\",\n  \"category\": \"FLOWER\",\n  \"price\": 120,\n  \"quantityAvailable\": 10\n}"
-            },
-            "url": "{{baseUrl}}/api/plants"
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.environment.set(\"plantId\", pm.response.json()._id);"
-                ]
-              }
+              "raw": "{\n  \"name\": \"Rose\",\n  \"category\": \"FLOWER\",\n  \"price\": 120,\n  \"quantityAvailable\": 50\n}"
             }
-          ]
+          }
         },
         {
           "name": "Get All Plants",
@@ -45,100 +40,141 @@
           }
         },
         {
-          "name": "Update Plant Quantity",
+          "name": "Get Plant By ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/plants/{{plantId}}"
+          }
+        },
+        {
+          "name": "Update Plant",
           "request": {
             "method": "PATCH",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/plants/{{plantId}}",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"quantityChange\": -2\n}"
-            },
-            "url": "{{baseUrl}}/api/plants/{{plantId}}/quantity"
+              "raw": "{\n  \"price\": 150\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Plant",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/plants/{{plantId}}"
+          }
+        },
+        {
+          "name": "Upload Plant Image",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/uploads/plants/{{plantId}}/image",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "image", "type": "file" }
+              ]
+            }
           }
         }
       ]
     },
     {
-      "name": "Seed Lifecycle",
+      "name": "Seeds",
       "item": [
         {
           "name": "Create Seed",
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/seeds",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Tomato Seeds\",\n  \"category\": \"VEGETABLE\",\n  \"supplierName\": \"Agro Supplier\",\n  \"totalPurchased\": 100,\n  \"purchaseDate\": \"2026-01-01\",\n  \"expiryDate\": \"2026-12-31\"\n}"
-            },
+              "raw": "{\n  \"name\": \"Tomato Seed\",\n  \"category\": \"VEGETABLE\",\n  \"supplierName\": \"Agro Seeds\",\n  \"totalPurchased\": 1000,\n  \"purchaseDate\": \"2026-01-01\",\n  \"expiryDate\": \"2026-12-31\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get All Seeds",
+          "request": {
+            "method": "GET",
             "url": "{{baseUrl}}/api/seeds"
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.environment.set(\"seedId\", pm.response.json()._id);"
-                ]
-              }
-            }
-          ]
+          }
         },
         {
-          "name": "Sow Seeds",
+          "name": "Get Seed By ID",
           "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"seedId\": \"{{seedId}}\",\n  \"totalSeedsSown\": 30,\n  \"sowingDate\": \"2026-01-20\"\n}"
-            },
-            "url": "{{baseUrl}}/api/sowing"
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.environment.set(\"sowingId\", pm.response.json()._id);"
-                ]
-              }
-            }
-          ]
+            "method": "GET",
+            "url": "{{baseUrl}}/api/seeds/{{seedId}}"
+          }
         },
         {
-          "name": "Record Germination",
+          "name": "Update Seed",
           "request": {
-            "method": "POST",
+            "method": "PATCH",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/seeds/{{seedId}}",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"sowingId\": \"{{sowingId}}\",\n  \"germinatedSeeds\": 22,\n  \"germinationDate\": \"2026-01-25\"\n}"
-            },
-            "url": "{{baseUrl}}/api/germination"
+              "raw": "{\n  \"supplierName\": \"Updated Supplier\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Seed",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/seeds/{{seedId}}"
+          }
+        },
+        {
+          "name": "Upload Seed Image",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/seeds/{{seedId}}/image",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "image", "type": "file" }
+              ]
+            }
           }
         }
       ]
     },
     {
-      "name": "Sales & Profit",
+      "name": "Sales",
       "item": [
         {
           "name": "Create Sale (Transactional)",
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/sales",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"items\": [\n    {\n      \"plantId\": \"{{plantId}}\",\n      \"quantity\": 2\n    }\n  ],\n  \"paymentMode\": \"UPI\"\n}"
-            },
-            "url": "{{baseUrl}}/api/sales"
+              "raw": "{\n  \"plantId\": \"{{plantId}}\",\n  \"quantity\": 2\n}"
+            }
           }
         },
         {
-          "name": "Profit Report",
+          "name": "Get All Sales",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/profit?startDate=2026-01-01&endDate=2026-12-31"
+            "url": "{{baseUrl}}/api/sales"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Profit",
+      "item": [
+        {
+          "name": "Get Profit Report",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/profit"
           }
         }
       ]

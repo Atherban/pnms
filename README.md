@@ -1,334 +1,220 @@
+# Plant Nursery Management System (PNMS) – Backend
 
-# 🌱 Plant Nursery Management System – Backend
+## Overview
 
-A **production-grade backend API** for managing a plant nursery business, including inventory, seed management, sowing, germination tracking, and operational safety.
+This backend powers the **Plant Nursery Management System**, designed with **production-grade architecture** and **domain-driven decisions**.
 
-This project is built with **Node.js, Express, MongoDB (Mongoose)** following **clean architecture and industry best practices**.
+The system manages:
 
----
+* Master data (Plants, Seeds)
+* Inventory-affecting events (Sales, Sowing, Germination)
+* Derived reports (Profit)
+* Media uploads (Images)
 
-## 📌 Key Objectives
+The backend follows **best practices**:
 
-- Maintain accurate plant and seed inventory
-- Prevent stock inconsistencies and negative inventory
-- Track seed sowing and germination losses
-- Enforce strict validation and error handling
-- Provide scalable and maintainable backend architecture
-
----
-
-## 🧠 Architecture Overview
-
-This backend follows a **layered architecture**:
-
-```
-
-Route → Validation → Controller → Service → Model → Database
-
-```
-
-### Responsibility Separation
-
-| Layer | Responsibility |
-|-----|---------------|
-Routes | Define HTTP endpoints |
-Validation | Validate request input (Joi) |
-Controllers | Request orchestration |
-Services | Business logic |
-Models | Data schema (Mongoose) |
-Middlewares | Cross-cutting concerns |
-Exceptions | Typed error handling |
+* Layered architecture (Routes → Controllers → Services → Models)
+* Strict validation
+* Transaction safety for financial & inventory operations
+* No blind CRUD on historical data
 
 ---
 
-## 🗂️ Project Structure
+## Tech Stack
+
+* **Node.js + Express** – API framework
+* **MongoDB + Mongoose** – Database & ODM
+* **Joi** – Request validation
+* **Multer** – File uploads
+* **Helmet** – Security headers
+* **Docker (Replica Set)** – Transaction support
+
+---
+
+## Folder Structure (Core)
 
 ```
-
 src/
-├── app.js
-├── server.js
-│
-├── config/
-│   └── db.js
-│
-├── controllers/
-│   ├── plant.controller.js
-│   ├── seed.controller.js
-│   ├── sowing.controller.js
-│   └── germination.controller.js
-│
-├── services/
-│   ├── plant.service.js
-│   ├── seed.service.js
-│   ├── sowing.service.js
-│   └── germination.service.js
-│
-├── models/
-│   ├── Plant.model.js
-│   ├── Seed.model.js
-│   ├── SeedSowing.model.js
-│   └── Germination.model.js
-│
-├── routes/
-│   ├── plant.routes.js
-│   ├── seed.routes.js
-│   ├── sowing.routes.js
-│   └── germination.routes.js
-│
-├── validations/
-│   ├── plant.validation.js
-│   ├── seed.validation.js
-│   ├── sowing.validation.js
-│   ├── germination.validation.js
-│   └── common.validation.js
-│
-├── middlewares/
-│   ├── validate.js
-│   └── errorHandler.js
-│
-└── exceptions/
-└── ApiError.js
+ ├── app.js
+ ├── server.js
+ ├── routes/
+ ├── controllers/
+ ├── services/
+ ├── models/
+ ├── validations/
+ ├── middlewares/
+ ├── exceptions/
+```
 
-````
+Each layer has a **single responsibility**.
 
 ---
 
-## ⚙️ Tech Stack
-
-- **Runtime:** Node.js
-- **Framework:** Express.js
-- **Database:** MongoDB
-- **ODM:** Mongoose
-- **Validation:** Joi
-- **Security:** Helmet
-- **Env Management:** dotenv
-
----
-
-## 🔐 Environment Variables
-
-Create a `.env` file at the project root:
-
-```env
-PORT=5000
-MONGODB_URI=mongodb://localhost:27017/nursery_db
-NODE_ENV=development
-````
-
-⚠️ **Never commit `.env` to version control**
-
----
-
-## 🚀 Getting Started
-
-### 1. Install dependencies
-
-```bash
-npm install
-```
-
-### 2. Start MongoDB
-
-Ensure MongoDB is running locally or via Docker.
-
-### 3. Run server
-
-```bash
-npm run dev
-```
-
-### 4. Health check
+## Architecture Flow
 
 ```
-GET http://localhost:5000/health
-```
-
-Expected response:
-
-```json
-{ "status": "OK" }
+HTTP Request
+   ↓
+Route (URL + method)
+   ↓
+Validation (Joi)
+   ↓
+Controller (request orchestration)
+   ↓
+Service (business logic)
+   ↓
+Model (database)
 ```
 
 ---
 
-## 🧪 API Documentation
+## Modules & CRUD Policy
 
-### Base URL
+### Modules WITH CRUD
+
+| Module | Reason                  |
+| ------ | ----------------------- |
+| Plant  | Master inventory entity |
+| Seed   | Master inventory entity |
+
+### Modules WITHOUT CRUD
+
+| Module      | Reason                            |
+| ----------- | --------------------------------- |
+| Sale        | Financial transaction (immutable) |
+| Seed Sowing | Physical event                    |
+| Germination | Observation                       |
+| Profit      | Derived data                      |
+
+---
+
+## Plant Module
+
+### Responsibilities
+
+* Manage plant inventory
+* Store images
+* Allow controlled updates
+
+### Endpoints
 
 ```
-http://localhost:5000/api
+POST   /api/plants
+GET    /api/plants
+GET    /api/plants/:id
+PATCH  /api/plants/:id
+DELETE /api/plants/:id 
+POST   /api/uploads/plants/:id/image
 ```
 
 ---
 
-## 🌿 Plant Module
+## Seed Module
 
-### Create Plant
+### Responsibilities
 
-```
-POST /plants
-```
+* Manage seed batches
+* Track usage & expiry
+* Attach images
 
-```json
-{
-  "name": "Rose Plant",
-  "category": "FLOWER",
-  "price": 120,
-  "quantityAvailable": 10
-}
-```
-
----
-
-### Get All Plants
+### Endpoints
 
 ```
-GET /plants
+POST   /api/seeds
+GET    /api/seeds
+GET    /api/seeds/:id
+PATCH  /api/seeds/:id
+DELETE /api/seeds/:id (soft)
+POST   /api/seeds/:id/image
 ```
 
 ---
 
-### Update Plant Quantity
+## Sales Module (Transactional)
+
+### Key Rules
+
+* No update or delete
+* Uses MongoDB transactions
+* Updates plant inventory atomically
+
+### Endpoints
 
 ```
-PATCH /plants/:id/quantity
-```
-
-```json
-{
-  "quantityChange": -3
-}
-```
-
-Rules:
-
-* Stock cannot go negative
-* Status auto-updates
-
----
-
-### Mark Plant Out of Stock
-
-```
-PATCH /plants/:id/out-of-stock
+POST /api/sales
+GET  /api/sales
+GET  /api/sales/:id
 ```
 
 ---
 
-## 🌰 Seed Module
+## Profit Module (Read-only)
 
-### Create Seed
+### Key Rules
+
+* No CRUD
+* Calculated dynamically
+* Requires date range
+
+### Endpoint
 
 ```
-POST /seeds
-```
-
-```json
-{
-  "name": "Tomato Seeds",
-  "category": "VEGETABLE",
-  "supplierName": "Agro Supplier",
-  "totalPurchased": 100,
-  "purchaseDate": "2026-01-01",
-  "expiryDate": "2026-12-31"
-}
+GET /api/profit?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
 ```
 
 ---
 
-### Get All Seeds
+## Image Uploads
+
+* Files stored **outside project root**
+* Only metadata stored in MongoDB
+* Served via static route
 
 ```
-GET /seeds
+/uploads/<filename>
 ```
+
+Supported formats:
+
+* JPEG
+* PNG
+* WEBP
 
 ---
 
-## 🌱 Seed Sowing Module
+## Error Handling
 
-### Sow Seeds
+All errors flow through a **global error handler**.
 
-```
-POST /sowing
-```
-
-```json
-{
-  "seedId": "<seedId>",
-  "totalSeedsSown": 30,
-  "sowingDate": "2026-01-20"
-}
-```
-
-Rules:
-
-* Cannot sow expired seeds
-* Cannot sow more than available stock
-
----
-
-## 🌼 Germination Module
-
-### Record Germination
-
-```
-POST /germination
-```
-
-```json
-{
-  "sowingId": "<sowingId>",
-  "germinatedSeeds": 22,
-  "germinationDate": "2026-01-25"
-}
-```
-
-Rules:
-
-* Germinated seeds ≤ seeds sown
-* Used to calculate loss percentage
-
----
-
-## ❗ Error Handling
-
-All errors are handled via a **centralized error handler**.
-
-Example error response:
+Standard error shape:
 
 ```json
 {
   "success": false,
-  "message": "Insufficient seed stock"
+  "message": "Error description"
 }
 ```
 
-* Validation errors → 400
-* Not found errors → 404
-* System errors → 500
+---
+
+## Environment Variables
+
+```env
+PORT=5000
+MONGODB_URI=mongodb://localhost:27017/pnms?replicaSet=rs0
+UPLOADS_BASE_PATH=/home/user/uploads
+```
 
 ---
 
-## 🛡️ Validation Strategy
+## Postman Collection
 
-* All request bodies, params, and queries are validated using **Joi**
-* MongoDB ObjectIds are validated before DB access
-* Unknown fields are stripped automatically
+A complete Postman collection exists covering:
+
+* All CRUD
+* Uploads
+* Transactions
+* Error cases
 
 ---
-
-## 🔍 Testing
-
-Recommended testing tool:
-
-* **Postman**
-
-Test strategy:
-
-* Happy paths
-* Invalid ObjectId
-* Negative stock
-* Expired seeds
-* Business rule violations
 
