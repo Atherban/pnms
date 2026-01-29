@@ -5,7 +5,10 @@ const saleService = require("../services/sale.service");
 const createSale = async (req, res, next) => {
   try {
     const sale = await saleService.createSale(req.body);
-    res.status(statusCode.CREATED).json(sale);
+    res.status(statusCode.CREATED).json({
+      success: true,
+      data: sale
+    });
   } catch (error) {
     next(error);
   }
@@ -15,7 +18,10 @@ const createSale = async (req, res, next) => {
 const getAllSales = async(req,res,next)=>{
   try {
     const sales = await saleService.getAllSales();
-    res.status(statusCode.OK).json(sales)
+    res.status(statusCode.OK).json({
+      success: true,
+      data: sales
+    })
   } catch (error) {
     next(error)
   }
@@ -25,7 +31,10 @@ const getAllSales = async(req,res,next)=>{
 const getSalesById = async(req,res,next)=>{
   try {
     const sale = await saleService.getSalesById(req.params.id);
-    res.status(statusCode.OK).json(sale);
+    res.status(statusCode.OK).json({
+      success: true,
+      data: sale
+    });
   } catch (error) {
     next(error)
   }

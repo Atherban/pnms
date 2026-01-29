@@ -31,7 +31,10 @@ const getUsers = async (req, res, next) => {
 const getUserById = async (req, res, next) => {
   try {
     const user = await userService.getUserById(req.params.id);
-    res.status(statusCode.OK).json(user);
+    res.status(statusCode.OK).json({
+        message: "User retrieved successfully",
+        data: user
+    });
   } catch (err) {
     next(err);
   }
@@ -41,7 +44,10 @@ const getUserById = async (req, res, next) => {
 const updateUser = async (req, res, next) => {
   try {
     const user = await userService.updateUser(req.params.id, req.body);
-    res.status(statusCode.OK).json(user);
+    res.status(statusCode.OK).json({
+        message: "User updated successfully",
+        data: user
+    });
   } catch (err) {
     next(err);
   }
@@ -51,7 +57,10 @@ const updateUser = async (req, res, next) => {
 const disableUser = async (req, res, next) => {
   try {
     const user = await userService.disableUser(req.params.id);
-    res.status(statusCode.OK).json(user);
+    res.status(statusCode.OK).json({
+        message: "User disabled successfully",
+        data: user
+    });
   } catch (err) {
     next(err);
   }

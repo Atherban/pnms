@@ -8,7 +8,10 @@ const recordGermination = async (req, res, next) => {
       req.body,
       req.user
     );
-    res.status(statusCode.CREATED).json(germination);
+    res.status(statusCode.CREATED).json({
+      message: "Germination recorded successfully",
+      data: germination,
+    });
   } catch (err) {
     next(err);
   }
@@ -18,7 +21,10 @@ const recordGermination = async (req, res, next) => {
 const getGerminations = async (req, res, next) => {
   try {
     const records = await germinationService.getGerminations();
-    res.status(statusCode.OK).json(records);
+    res.status(statusCode.OK).json({
+      message: "Germination records retrieved successfully",
+      data: records,
+    });
   } catch (err) {
     next(err);
   }

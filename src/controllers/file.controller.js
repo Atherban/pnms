@@ -13,7 +13,7 @@ const uploadPlantImage = async (req, res, next) => {
 
     res.status(200).json({
       message: "Image uploaded successfully",
-      plant
+      data: plant
     });
   } catch (err) {
     next(err);

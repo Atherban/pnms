@@ -6,7 +6,10 @@ const plantService = require("../services/plant.service");
 const createPlant = async (req, res, next) => {
   try {
     const plant = await plantService.createPlant(req.body, req.user);
-    res.status(statusCode.CREATED).json(plant);
+    res.status(statusCode.CREATED).json({
+      message: "Plant created successfully",
+      data: plant,
+    });
   } catch (error) {
     next(error);
   }
@@ -16,7 +19,10 @@ const createPlant = async (req, res, next) => {
 const getPlants = async (req, res, next) => {
   try {
     const plants = await plantService.getAllPlants();
-    res.status(statusCode.OK).json(plants);
+    res.status(statusCode.OK).json({
+      message: "Plants retrieved successfully",
+      data: plants,
+    });
   } catch (error) {
     next(error);
   }
@@ -26,7 +32,10 @@ const getPlants = async (req, res, next) => {
 const getPlantById = async (req, res, next) => {
   try {
     const plant = await plantService.getPlantById(req.params.id);
-    res.status(statusCode.OK).json(plant);
+    res.status(statusCode.OK).json({
+      message: "Plant retrieved successfully",
+      data: plant,
+    });
   } catch (error) {
     next(error);
   }
@@ -36,7 +45,10 @@ const getPlantById = async (req, res, next) => {
 const deletePlantById = async(req,res,next)=>{
   try {
     const plant = await plantService.deletePlantById(req.params.id);
-    res.status(statusCode.OK).json(plant);
+    res.status(statusCode.OK).json({
+      message: "Plant deleted successfully",
+      data: plant,
+    });
   } catch (error) {
     next(error);
   }
@@ -46,7 +58,10 @@ const deletePlantById = async(req,res,next)=>{
 const updatePlantDetails = async(req,res,next)=>{
   try {
     const plant = await plantService.updatePlantDetails(req.params.id, req.body, req.user);
-    res.status(statusCode.OK).json(plant);
+    res.status(statusCode.OK).json({
+      message: "Plant updated successfully",
+      data: plant,
+    });
   } catch (error) {
     next(error);
   }
@@ -60,19 +75,23 @@ const updateQuantity = async (req, res, next) => {
       req.params.id,
       quantityChange
     );
-    res.status(statusCode.OK).json(plant);
+    res.status(statusCode.OK).json({
+      message: "Plant quantity updated successfully",
+      data: plant,
+    });
   } catch (error) {
     next(error);
   }
 };
 
-
 //Mark plant out of stock
-
 const markOutOfStock = async (req, res, next) => {
   try {
     const plant = await plantService.markOutOfStock(req.params.id);
-    res.status(statusCode.OK).json(plant);
+    res.status(statusCode.OK).json({
+      message: "Plant marked out of stock successfully",
+      data: plant,
+    });
   } catch (error) {
     next(error);
   }

@@ -4,7 +4,10 @@ const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const data = await authService.login(email, password);
-    res.status(200).json(data);
+    res.status(200).json({
+      message: "Login successful",
+      data:data
+    });
   } catch (err) {
     next(err);
   }

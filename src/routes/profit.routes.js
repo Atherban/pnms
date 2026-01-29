@@ -12,7 +12,7 @@ router.get(
   "/",
   authenticate,
   authorize("ADMIN"),
-  validate(profitQuerySchema, "query"),
+  validate(profitQuerySchema, "body"),
   profitController.getProfitReport
 );
 
