@@ -1,47 +1,39 @@
-const statusCode = require("../enums/statusCode");
 const saleService = require("../services/sale.service");
+const statusCode = require("../enums/statusCode");
 
-// create sale
 const createSale = async (req, res, next) => {
   try {
-    const sale = await saleService.createSale(req.body);
-    res.status(statusCode.CREATED).json({
-      success: true,
-      data: sale
-    });
-  } catch (error) {
-    next(error);
+    const sale = await saleService.createSale(
+      req.body,
+      req.user
+    );
+
+    res.status(statusCode.CREATED).json(sale);
+  } catch (err) {
+    next(err);
   }
 };
 
-// get all sales
-const getAllSales = async(req,res,next)=>{
+const getAllSales = async (req, res, next) => {
   try {
     const sales = await saleService.getAllSales();
-    res.status(statusCode.OK).json({
-      success: true,
-      data: sales
-    })
-  } catch (error) {
-    next(error)
+    res.status(statusCode.OK).json(sales);
+  } catch (err) {
+    next(err);
   }
-}
+};
 
-// get sale by id
-const getSalesById = async(req,res,next)=>{
+const getSaleById = async (req, res, next) => {
   try {
-    const sale = await saleService.getSalesById(req.params.id);
-    res.status(statusCode.OK).json({
-      success: true,
-      data: sale
-    });
-  } catch (error) {
-    next(error)
+    const sale = await saleService.getSaleById(req.params.id);
+    res.status(statusCode.OK).json(sale);
+  } catch (err) {
+    next(err);
   }
-}
+};
 
 module.exports = {
   createSale,
   getAllSales,
-  getSalesById
+  getSaleById
 };

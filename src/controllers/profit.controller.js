@@ -1,15 +1,16 @@
 const profitService = require("../services/profit.service");
+const statusCode = require("../enums/statusCode");
 
-const getProfitReport = async (req, res, next) => {
+const getProfit = async (req, res, next) => {
   try {
-    const { startDate, endDate } = req.body;
+    const { startDate, endDate } = req.query;
 
     const report = await profitService.calculateProfit(
       startDate,
       endDate
     );
 
-    res.status(200).json({
+    res.status(statusCode.OK).json({
       success: true,
       data: report
     });
@@ -19,5 +20,5 @@ const getProfitReport = async (req, res, next) => {
 };
 
 module.exports = {
-  getProfitReport
+  getProfit
 };

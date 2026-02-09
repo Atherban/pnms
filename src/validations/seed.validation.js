@@ -1,19 +1,29 @@
 const Joi = require("joi");
 
 const createSeedSchema = Joi.object({
-  name: Joi.string().required(),
-  category: Joi.string()
-    .valid("VEGETABLE", "FLOWER", "FRUIT", "HERB")
+  name: Joi.string().trim().required(),
+  plantType: Joi.string()
+    .hex()
+    .length(24)
     .required(),
-  supplierName: Joi.string().required(),
-  totalPurchased: Joi.number().integer().min(1).required(),
+
+  supplierName: Joi.string().trim().required(),
+
+  totalPurchased: Joi.number()
+    .integer()
+    .min(1)
+    .required(),
+
   purchaseDate: Joi.date().required(),
-  expiryDate: Joi.date().greater(Joi.ref("purchaseDate")).required()
+
+  expiryDate: Joi.date()
+    .greater(Joi.ref("purchaseDate"))
+    .required()
 });
 
 const updateSeedSchema = Joi.object({
-  name: Joi.string().optional(),
-  supplierName: Joi.string().optional(),
+  name: Joi.string().trim().optional(),
+  supplierName: Joi.string().trim().optional(),
   expiryDate: Joi.date().optional()
 }).min(1);
 

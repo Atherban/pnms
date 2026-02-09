@@ -5,10 +5,10 @@ const saleController = require("../controllers/sale.controller");
 const authenticate = require("../middlewares/auth.middleware");
 const authorize = require("../middlewares/rbac.middleware");
 const validate = require("../middlewares/validate.middleware");
-const { objectIdSchema } = require("../validations/common.validation");
 const { createSaleSchema } = require("../validations/sale.validation");
+const { objectIdSchema } = require("../validations/common.validation");
 
-// Create sale (ADMIN + STAFF)
+// Create sale
 router.post(
   "/",
   authenticate,
@@ -17,21 +17,21 @@ router.post(
   saleController.createSale
 );
 
-// Get all sales (ADMIN only)
+// Get all sales
 router.get(
   "/",
   authenticate,
-  authorize("ADMIN"),
+  authorize("ADMIN", "STAFF"),
   saleController.getAllSales
 );
 
-// Get sale by ID (ADMIN only)
+// Get sale by ID
 router.get(
   "/:id",
   authenticate,
-  authorize("ADMIN"),
+  authorize("ADMIN", "STAFF"),
   validate(objectIdSchema, "params"),
-  saleController.getSalesById
+  saleController.getSaleById
 );
 
 module.exports = router;

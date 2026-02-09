@@ -8,6 +8,7 @@ const sowSeeds = async (req, res, next) => {
       req.body,
       req.user
     );
+
     res.status(statusCode.CREATED).json({
       message: "Seeds sown successfully",
       data: sowing
@@ -21,6 +22,7 @@ const sowSeeds = async (req, res, next) => {
 const getSowings = async (req, res, next) => {
   try {
     const sowings = await sowingService.getSowings();
+
     res.status(statusCode.OK).json({
       message: "Sowing records retrieved successfully",
       data: sowings

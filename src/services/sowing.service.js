@@ -1,48 +1,49 @@
 const mongoose = require("mongoose");
-const Sowing = require("../models/SeedSowing.model");
 const Seed = require("../models/Seed.model");
+const SowingBatch = require("../models/SowingBatch.model");
+const PlantInventory = require("../models/PlantInventory.model");
 const ApiError = require("../exceptions/ApiError");
-const statusCode = require("../enums/statusCode");
 
-// SOW SEEDS (Transactional)
 const sowSeeds = async (data, user) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    const seed = await Seed.findById(data.seedId).session(session);
+    const seed = await Seed.findById(data.seedId)
+      .populate("plantType")
+      .session(session);
 
-    if (!seed || seed.isDeleted) {
-      throw new ApiError(statusCode.NOT_FOUND, "Seed not found");
+    if (!seed) {
+      throw new ApiError(404, "Seed not found");
     }
 
-    if (seed.expiryDate < new Date()) {
-      throw new ApiError(statusCode.BAD_REQUEST, "Seed batch has expired");
+    if (seed.totalPurchased - seed.seedsUsed < data.quantity) {
+      throw new ApiError(400, "Insufficient seed stock");
     }
 
-    const available = seed.totalPurchased - seed.seedsUsed;
-
-    if (data.quantity > available) {
-      throw new ApiError(
-        statusCode.BAD_REQUEST,
-        "Insufficient seed stock"
-      );
-    }
-
-    // Consume seeds
     seed.seedsUsed += data.quantity;
     await seed.save({ session });
 
-    // Create sowing record
-    const [sowing] = await Sowing.create(
+    const sowingBatch = await SowingBatch.create(
       [
         {
-          seedId: seed._id,
-          plantId: data.plantId,
-          quantity: data.quantity,
-          sowingDate: data.sowingDate || new Date(),
+          seed: seed._id,
+          plantType: seed.plantType._id,
+          quantitySown: data.quantity,
           performedBy: user.userId,
           roleAtTime: user.role
+        }
+      ],
+      { session }
+    );
+
+    await PlantInventory.create(
+      [
+        {
+          plantType: seed.plantType._id,
+          source: "SOWN",
+          sourceRef: sowingBatch[0]._id,
+          quantity: data.quantity
         }
       ],
       { session }
@@ -51,24 +52,23 @@ const sowSeeds = async (data, user) => {
     await session.commitTransaction();
     session.endSession();
 
-    return sowing;
-  } catch (error) {
+    return sowingBatch[0];
+  } catch (err) {
     await session.abortTransaction();
     session.endSession();
-    throw error;
+    throw err;
   }
 };
 
-// GET ALL SOWINGS (ADMIN only – usually)
 const getSowings = async () => {
-  return Sowing.find()
-    .sort({ createdAt: -1 })
-    .populate("seedId", "name")
-    .populate("plantId", "name")
-    .populate("performedBy", "name email");
+  return SowingBatch.find()
+    .populate("seed")
+    .populate("plantType")
+    .sort({ createdAt: -1 });
 };
 
 module.exports = {
   sowSeeds,
   getSowings
 };
+

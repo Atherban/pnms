@@ -7,13 +7,13 @@ const authorize = require("../middlewares/rbac.middleware");
 const validate = require("../middlewares/validate.middleware");
 const { profitQuerySchema } = require("../validations/profit.validation");
 
-// Get profit report (ADMIN only)
+// Get profit (ADMIN only)
 router.get(
   "/",
   authenticate,
   authorize("ADMIN"),
-  validate(profitQuerySchema, "body"),
-  profitController.getProfitReport
+  validate(profitQuerySchema, "query"),
+  profitController.getProfit
 );
 
 module.exports = router;

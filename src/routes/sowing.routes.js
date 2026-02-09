@@ -4,12 +4,15 @@ const router = express.Router();
 const sowingController = require("../controllers/sowing.controller");
 const authenticate = require("../middlewares/auth.middleware");
 const authorize = require("../middlewares/rbac.middleware");
+const validate = require("../middlewares/validate.middleware");
+const { sowingSchema } = require("../validations/sowing.validation");
 
 // Create sowing record
 router.post(
   "/",
   authenticate,
   authorize("ADMIN", "STAFF"),
+  validate(sowingSchema),
   sowingController.sowSeeds
 );
 

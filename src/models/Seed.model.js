@@ -8,9 +8,9 @@ const seedSchema = new mongoose.Schema(
       trim: true,
     },
 
-    category: {
-      type: String,
-      enum: ["VEGETABLE", "FLOWER", "FRUIT", "HERB"],
+    plantType: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "PlantType",
       required: true,
     },
 
@@ -59,6 +59,7 @@ const seedSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

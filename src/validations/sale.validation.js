@@ -1,12 +1,10 @@
 const Joi = require("joi");
 
 const createSaleSchema = Joi.object({
-  customerId: Joi.string().hex().length(24).optional(),
-
   items: Joi.array()
     .items(
       Joi.object({
-        plantId: Joi.string().hex().length(24).required(),
+        inventoryId: Joi.string().hex().length(24).required(),
         quantity: Joi.number().integer().min(1).required()
       })
     )

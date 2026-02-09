@@ -2,15 +2,16 @@ const express = require("express");
 const helmet = require("helmet");
 const errorHandler = require("./middlewares/errorHandler.middleware");
 
-const plantRoutes = require("./routes/plant.routes");
 const seedRoutes = require("./routes/seed.routes");
 const sowingRoutes = require("./routes/sowing.routes");
 const germinationRoutes = require("./routes/germination.routes");
 const saleRoutes = require("./routes/sale.routes");
 const profitRoutes = require("./routes/profit.routes");
-const uploadRoutes = require("./routes/upload.routes");
 const authRoutes = require("./routes/auth.routes");
 const userRoutes = require("./routes/user.routes");
+const plantTypeRoutes = require("./routes/plantType.routes");
+const inventoryRoutes = require("./routes/inventory.routes");
+
 
 const app = express();
 
@@ -22,16 +23,18 @@ app.get("/health", (req, res) => {
   res.status(200).json({ status: "OK" });
 });
 
+
 // API routes
 app.use("/api/profit", profitRoutes);
 app.use("/api/sales", saleRoutes);
-app.use("/api/plants", plantRoutes);
 app.use("/api/seeds", seedRoutes);
 app.use("/api/sowing", sowingRoutes);
 app.use("/api/germination", germinationRoutes);
-app.use("/api/uploads", uploadRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/plant-types", plantTypeRoutes);
+app.use("/api/inventory", inventoryRoutes);
+
 
 // serve uploaded files
 if (!process.env.UPLOADS_BASE_PATH) {

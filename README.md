@@ -1,41 +1,87 @@
+
+
 # 🌱 Plant Nursery Management System (PNMS) – Backend
 
 ## Overview
 
-PNMS is a **production-grade backend system** for managing plant nursery operations such as inventory, seed procurement, sowing, germination, sales, profit analysis, and **admin-controlled user management**.
+PNMS is a **production-grade backend system** for managing plant nursery operations including:
 
-This backend follows **enterprise standards**:
+* Plant catalog (species definitions)
+* Seed procurement and usage
+* Sowing and germination tracking
+* Inventory management
+* Sales and profit analysis
+* Admin-controlled user management
+
+The system is designed with **enterprise backend principles**:
 
 * JWT-based Authentication (AuthN)
-* Role-Based Access Control (AuthZ / RBAC)
-* Auditability (who did what and when)
-* Transactional integrity (MongoDB transactions)
-* Clean architecture (Route → Controller → Service → Model)
+* Role-Based Access Control (RBAC / AuthZ)
+* Clear domain separation (definition vs quantity)
+* Transactional integrity using MongoDB transactions
+* Clean layered architecture
+  (**Route → Controller → Service → Model**)
 
 ---
 
-## Core Principles
+## Core Architectural Insight (Most Important)
 
-### Authentication vs Authorization
+> **“WHAT something is” must never be mixed with “HOW MUCH exists.”**
 
-* **Authentication**: Verifies who the user is (JWT)
-* **Authorization**: Verifies what the user is allowed to do (RBAC)
+To enforce this, the backend separates **master data**, **transactions**, and **inventory**.
 
-There is **no public signup**. Users are **provisioned by ADMIN users only**.
+### Final Domain Model
+
+```
+PlantType        → Definition (WHAT it is)
+Seed             → Input batch (raw material)
+SowingBatch      → Transactional event
+PlantInventory   → Stock (HOW MUCH exists)
+Sale             → Consumes inventory
+Profit           → Read-only analytics
+```
+
+This design:
+
+* Prevents invalid seed–plant combinations
+* Eliminates duplicated plant records
+* Enables reliable analytics and profit calculation
+* Mirrors real ERP / POS / inventory systems
+
+---
+
+## Authentication vs Authorization
+
+### Authentication (AuthN)
+
+Verifies **who the user is** using JWT.
+
+### Authorization (AuthZ / RBAC)
+
+Verifies **what the user is allowed to do** based on role.
+
+There is **no public signup**.
+Users are **created and managed by ADMIN users only**.
 
 ---
 
 ## Roles
 
-| Role   | Description                         |
-| ------ | ----------------------------------- |
-| ADMIN  | Full system access, user management |
-| STAFF  | Operational actions (sales, sowing) |
-| VIEWER | Read-only access                    |
+| Role   | Description                                       |
+| ------ | ------------------------------------------------- |
+| ADMIN  | Full system access, user & master data management |
+| STAFF  | Operational actions (sowing, sales)               |
+| VIEWER | Read-only access                                  |
+
+All protected routes require:
+
+```
+Authorization: Bearer <JWT_TOKEN>
+```
 
 ---
 
-## Architecture
+## Project Structure
 
 ```
 src/
@@ -48,7 +94,7 @@ src/
  └── exceptions/
 ```
 
-Each request flows as:
+Request flow:
 
 ```
 Route → authenticate → authorize → validate → controller → service → model
@@ -60,13 +106,42 @@ Route → authenticate → authorize → validate → controller → service →
 
 1. ADMIN creates users via `/api/users`
 2. User logs in via `/api/auth/login`
-3. JWT issued
-4. JWT sent in `Authorization: Bearer <token>`
-5. Middleware attaches `req.user = { userId, role }`
+3. Backend issues JWT
+4. JWT sent in `Authorization` header
+5. Middleware attaches:
+
+```js
+req.user = { userId, role }
+```
 
 ---
 
-## User Management (Admin Only)
+## 🔐 Authentication API
+
+### Login
+
+**POST** `/api/auth/login`
+
+**Request**
+
+```json
+{
+  "email": "admin@example.com",
+  "password": "password123"
+}
+```
+
+**Response**
+
+```json
+{
+  "token": "JWT_TOKEN"
+}
+```
+
+---
+
+## 👤 User Management (ADMIN Only)
 
 | Method | Endpoint       | Description    |
 | ------ | -------------- | -------------- |
@@ -76,123 +151,257 @@ Route → authenticate → authorize → validate → controller → service →
 | PATCH  | /api/users/:id | Update user    |
 | DELETE | /api/users/:id | Disable user   |
 
-Disabled users cannot log in.
+Disabled users **cannot log in**.
 
 ---
 
-## Plant Module
+## 🌱 PlantType (Master Data)
 
-| Method | Endpoint                     | Role  |
-| ------ | ---------------------------- | ----- |
-| POST   | /api/plants                  | ADMIN |
-| GET    | /api/plants                  | ALL   |
-| GET    | /api/plants/:id              | ALL   |
-| PATCH  | /api/plants/:id              | ADMIN |
-| PATCH  | /api/plants/:id/quantity     | ADMIN |
-| PATCH  | /api/plants/:id/out-of-stock | ADMIN |
-| DELETE | /api/plants/:id              | ADMIN |
+Represents the **definition / species** of a plant (e.g. Tomato, Rose).
 
-Plants store audit fields: `createdBy`, `updatedBy`.
+### Create PlantType
 
----
+**POST** `/api/plant-types` (ADMIN)
 
-## Seed Module
+**Request**
 
-| Method | Endpoint       | Role  |
-| ------ | -------------- | ----- |
-| POST   | /api/seeds     | ADMIN |
-| GET    | /api/seeds     | ALL   |
-| GET    | /api/seeds/:id | ALL   |
-| PATCH  | /api/seeds/:id | ADMIN |
-| DELETE | /api/seeds/:id | ADMIN |
+```json
+{
+  "name": "Tomato",
+  "category": "VEGETABLE",
+  "variety": "Cherry"
+}
+```
 
----
+### Upload PlantType Image
 
-## Sowing Module (Transactional)
+**POST** `/api/plant-types/:id/image` (ADMIN)
 
-Consumes seed inventory.
+* `multipart/form-data`
+* field: `image` (file)
 
-| Method | Endpoint    | Role         |
-| ------ | ----------- | ------------ |
-| POST   | /api/sowing | ADMIN, STAFF |
-| GET    | /api/sowing | ADMIN        |
+### Get PlantTypes
 
-Audit fields: `performedBy`, `roleAtTime`.
+**GET** `/api/plant-types` (ALL ROLES)
 
 ---
 
-## Germination Module (Immutable)
+## 🌾 Seed Module
 
-| Method | Endpoint         | Role         |
-| ------ | ---------------- | ------------ |
-| POST   | /api/germination | ADMIN, STAFF |
-| GET    | /api/germination | ADMIN        |
+Seeds represent **input batches** and always belong to exactly one `PlantType`.
 
-Germination records are **observational** and do not affect inventory.
+### Create Seed
+
+**POST** `/api/seeds` (ADMIN)
+
+```json
+{
+  "name": "Tomato Seed Batch A",
+  "plantType": "PLANT_TYPE_ID",
+  "supplierName": "Agro Corp",
+  "totalPurchased": 1000,
+  "purchaseDate": "2026-01-01",
+  "expiryDate": "2026-12-31"
+}
+```
+
+### Get Seeds
+
+**GET** `/api/seeds`
+
+### Update Seed
+
+**PATCH** `/api/seeds/:id` (ADMIN)
+
+### Delete Seed (Soft Delete)
+
+**DELETE** `/api/seeds/:id` (ADMIN)
+
+### Upload Seed Image
+
+**POST** `/api/seeds/:id/image` (ADMIN)
 
 ---
 
-## Sales Module (Transactional)
+## 🌱 Sowing Module (Transactional)
 
-| Method | Endpoint       | Role         |
-| ------ | -------------- | ------------ |
-| POST   | /api/sales     | ADMIN, STAFF |
-| GET    | /api/sales     | ADMIN        |
-| GET    | /api/sales/:id | ADMIN        |
+Represents the **act of sowing seeds**.
+
+### Sow Seeds
+
+**POST** `/api/sowing` (ADMIN, STAFF)
+
+```json
+{
+  "seedId": "SEED_ID",
+  "quantity": 100
+}
+```
+
+Behavior:
+
+* Validates seed availability
+* Deducts seeds
+* Creates `SowingBatch`
+* Automatically creates `PlantInventory`
+
+### Get Sowings
+
+**GET** `/api/sowing` (ADMIN)
+
+---
+
+## 🌼 Germination Module (Immutable)
+
+Germination records are **observational only**.
+
+### Record Germination
+
+**POST** `/api/germination` (ADMIN, STAFF)
+
+```json
+{
+  "sowingId": "SOWING_ID",
+  "germinatedSeeds": 80
+}
+```
+
+### Get Germinations
+
+**GET** `/api/germination` (ADMIN)
+
+---
+
+## 📦 Inventory Module
+
+Tracks **actual stock quantity**.
+
+### Get Inventory
+
+**GET** `/api/inventory`
+
+### Get Inventory By ID
+
+**GET** `/api/inventory/:id`
+
+---
+
+## 💰 Sales Module (Transactional)
+
+Sales consume **PlantInventory**, not PlantType.
+
+### Create Sale
+
+**POST** `/api/sales` (ADMIN, STAFF)
+
+```json
+{
+  "items": [
+    {
+      "inventoryId": "INVENTORY_ID",
+      "quantity": 2
+    }
+  ],
+  "paymentMode": "CASH"
+}
+```
 
 Sales:
 
-* Reduce plant inventory
+* Reduce inventory
 * Capture price snapshot
 * Store `performedBy` and `roleAtTime`
 
+### Get Sales
+
+**GET** `/api/sales` (ADMIN)
+
+### Get Sale By ID
+
+**GET** `/api/sales/:id` (ADMIN)
+
 ---
 
-## Profit Module
+## 📊 Profit Module (Read-Only)
 
-| Method | Endpoint                        | Role  |
-| ------ | ------------------------------- | ----- |
-| GET    | /api/profit?startDate=&endDate= | ADMIN |
+Profit is calculated from **immutable data**.
+
+### Get Profit
+
+**GET**
+
+```
+/api/profit?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
+```
+
+**Response**
+
+```json
+{
+  "success": true,
+  "data": {
+    "totalSales": 12500,
+    "totalExpenses": 4200,
+    "totalLabourCost": 3100,
+    "totalCost": 7300,
+    "netProfit": 5200
+  }
+}
+```
 
 ---
 
-## Image Uploads
+## 🖼️ Image Handling
 
-Images are stored in a **global uploads directory**.
+Images are stored **outside the source directory** and served statically.
 
-| Entity | Endpoint                      |
-| ------ | ----------------------------- |
-| Plant  | /api/uploads/plants/:id/image |
-| Seed   | /api/seeds/:id/image          |
+```
+/uploads/<entity>/<entityId>/<filename>
+```
+
+### Image Ownership Rules
+
+| Entity                | Purpose                    |
+| --------------------- | -------------------------- |
+| PlantType.images      | Reference / catalog images |
+| PlantInventory.images | Optional real stock images |
+| Seed.images           | Seed batch images          |
 
 ---
 
 ## Transactions & Data Integrity
 
-Modules using MongoDB transactions:
+MongoDB transactions are used in:
 
-* Sales
-* Sowing
+* **Sowing**
+* **Sales**
 
-This guarantees **atomic operations** and prevents partial updates.
+This guarantees:
+
+* Atomic updates
+* No partial inventory changes
+* Strong consistency
 
 ---
 
 ## Error Handling
 
-All errors flow through a centralized error handler:
+Centralized error handling covers:
 
 * Validation errors (Joi)
-* Business errors (ApiError)
+* Business logic errors (`ApiError`)
 * System errors (500)
+
+Consistent error response format.
 
 ---
 
 ## Security Highlights
 
 * JWT-based authentication
-* Role-based authorization
+* RBAC enforcement at route level
 * No public signup
-* Password hashing with bcrypt
+* Password hashing using bcrypt
 * Disabled users blocked at login
 
+---

@@ -1,47 +1,61 @@
 const mongoose = require("mongoose");
 const Sale = require("../models/Sale.model");
-const Plant = require("../models/Plant.model");
+const PlantInventory = require("../models/PlantInventory.model");
 const ApiError = require("../exceptions/ApiError");
 const statusCode = require("../enums/statusCode");
 
-// CREATE SALE (Transactional)
+// CREATE SALE (Transactional, Inventory-based)
 const createSale = async (data, user) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    const saleItems = [];
     let totalAmount = 0;
+    const saleItems = [];
 
     for (const item of data.items) {
-      const plant = await Plant.findById(item.plantId).session(session);
+      const inventory = await PlantInventory.findById(item.inventoryId)
+        .populate("plantType")
+        .session(session);
 
-      if (!plant) {
-        throw new ApiError(statusCode.BAD_REQUEST, "Plant not found");
-      }
-
-      if (plant.isOutOfStock || plant.quantityAvailable < item.quantity) {
+      if (!inventory) {
         throw new ApiError(
           statusCode.BAD_REQUEST,
-          `Insufficient stock for ${plant.name}`
+          "Inventory item not found"
         );
       }
 
-      // Update inventory
-      plant.quantityAvailable -= item.quantity;
-      if (plant.quantityAvailable === 0) {
-        plant.isOutOfStock = true;
+      if (inventory.quantity < item.quantity) {
+        throw new ApiError(
+          statusCode.BAD_REQUEST,
+          "Insufficient inventory stock"
+        );
       }
 
-      await plant.save({ session });
+      const priceAtSale = inventory.plantType.sellingPrice;
+
+      if (priceAtSale === undefined) {
+        throw new ApiError(
+          statusCode.INTERNAL_SERVER_ERROR,
+          "Selling price not configured for plant type"
+        );
+      }
+
+      // Reduce inventory
+      inventory.quantity -= item.quantity;
+      if (inventory.quantity === 0) {
+        inventory.status = "OUT_OF_STOCK";
+      }
+
+      await inventory.save({ session });
 
       saleItems.push({
-        plantId: plant._id,
+        inventory: inventory._id,
         quantity: item.quantity,
-        priceAtSale: plant.price
+        priceAtSale
       });
 
-      totalAmount += plant.price * item.quantity;
+      totalAmount += priceAtSale * item.quantity;
     }
 
     const [sale] = await Sale.create(
@@ -68,19 +82,26 @@ const createSale = async (data, user) => {
   }
 };
 
+
 // GET ALL SALES
 const getAllSales = async () => {
   return Sale.find()
     .sort({ createdAt: -1 })
-    .populate("items.plantId", "name price")
-    .populate("performedBy", "name email");
+    .populate({
+      path: "items.inventory",
+      populate: { path: "plantType" }
+    })
+    .populate("customer", "name email");
 };
 
 // GET SALE BY ID
 const getSaleById = async (saleId) => {
   const sale = await Sale.findById(saleId)
-    .populate("items.plantId", "name price")
-    .populate("performedBy", "name email");
+    .populate({
+      path: "items.inventory",
+      populate: { path: "plantType" }
+    })
+    .populate("customer", "name email");
 
   if (!sale) {
     throw new ApiError(statusCode.NOT_FOUND, "Sale not found");

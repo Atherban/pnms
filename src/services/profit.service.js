@@ -1,11 +1,27 @@
 const Sale = require("../models/Sale.model");
 const Expense = require("../models/Expense.model");
 const Labour = require("../models/Labour.model");
+const ApiError = require("../exceptions/ApiError");
 
 const calculateProfit = async (startDate, endDate) => {
+  if (!startDate || !endDate) {
+    throw new ApiError(400, "startDate and endDate are required");
+  }
+
+  const from = new Date(startDate);
+  const to = new Date(endDate);
+
+  if (isNaN(from.getTime()) || isNaN(to.getTime())) {
+    throw new ApiError(400, "Invalid date format");
+  }
+
+  if (from > to) {
+    throw new ApiError(400, "startDate must be before endDate");
+  }
+
   const dateFilter = {
-    $gte: new Date(startDate),
-    $lte: new Date(endDate)
+    $gte: from,
+    $lte: to
   };
 
   // 1. Total Sales Revenue
@@ -65,6 +81,10 @@ const calculateProfit = async (startDate, endDate) => {
   const netProfit = totalSales - totalCost;
 
   return {
+    period: {
+      startDate: from,
+      endDate: to
+    },
     totalSales,
     totalExpenses,
     totalLabourCost,
