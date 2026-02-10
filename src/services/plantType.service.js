@@ -14,6 +14,10 @@ const getPlantTypes = async () => {
   return PlantType.find().sort({ name: 1 });
 };
 
+const getPlantTypesById = async (id) => {
+  return PlantType.findById(id)
+}
+
 const attachPlantTypeImage = async (plantTypeId, file) => {
   const plantType = await PlantType.findById(plantTypeId);
 
@@ -32,5 +36,6 @@ const attachPlantTypeImage = async (plantTypeId, file) => {
 module.exports = {
   createPlantType,
   getPlantTypes,
-  attachPlantTypeImage
+  attachPlantTypeImage,
+  getPlantTypesById
 };

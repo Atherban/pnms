@@ -26,6 +26,14 @@ router.get(
   plantTypeController.getPlantTypes
 );
 
+// Get PlantTypes By ID
+router.get(
+  "/:id",
+  authenticate,
+  authorize("ADMIN", "STAFF", "VIEWER"),
+  plantTypeController.getPlantTypesById
+);
+
 // Upload PlantType image (ADMIN)
 router.post(
   "/:id/image",

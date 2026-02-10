@@ -11,15 +11,24 @@ const plantTypeSchema = new mongoose.Schema(
 
     category: {
       type: String,
-      required: true
+      required: true,
+      enum: ["VEGETABLE", "FLOWER", "FRUIT", "HERB"]
     },
 
     variety: {
-      type: String
+      type: String,
+      trim: true
     },
 
     lifecycleDays: {
-      type: Number
+      type: Number,
+      min: 1
+    },
+
+    sellingPrice: {
+      type: Number,
+      required: true,
+      min: 0
     },
 
     images: [

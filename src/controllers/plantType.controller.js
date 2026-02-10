@@ -27,6 +27,23 @@ const getPlantTypes = async (req, res, next) => {
   }
 };
 
+const getPlantTypesById = async(req,res,next)=>{
+  try {
+    
+    const plantType = await plantTypeService.getPlantTypesById(
+      req.params.id
+    );
+
+    res.status(statusCode.OK).json({
+      message: "PlantTypes retrieved successfully",
+      data: plantType
+    })
+
+  } catch (error) {
+    next(error)
+  }
+}
+
 const uploadPlantTypeImage = async (req, res, next) => {
   try {
     if (!req.file) {
@@ -50,5 +67,6 @@ const uploadPlantTypeImage = async (req, res, next) => {
 module.exports = {
   createPlantType,
   getPlantTypes,
+  getPlantTypesById,
   uploadPlantTypeImage
 };
