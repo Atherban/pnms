@@ -18,6 +18,33 @@ const getPlantTypesById = async (id) => {
   return PlantType.findById(id)
 }
 
+const updatePlantType = async (id, data, user) => {
+  const allowedUpdates = {
+    ...(data.name && { name: data.name }),
+    ...(data.category && { category: data.category }),
+    ...(data.variety && { variety: data.variety }),
+    ...(data.lifecycleDays !== undefined && {
+      lifecycleDays: data.lifecycleDays
+    }),
+    ...(data.sellingPrice !== undefined && {
+      sellingPrice: data.sellingPrice
+    }),
+    updatedBy: user.userId
+  };
+
+  const updatedPlantType = await PlantType.findOneAndUpdate(
+    { _id: id },
+    { $set: allowedUpdates },
+    { new: true, runValidators: true }
+  );
+
+  if (!updatedPlantType) {
+    throw new ApiError(404, "Plant type not found");
+  }
+
+  return updatedPlantType;
+};
+
 const attachPlantTypeImage = async (plantTypeId, file) => {
   const plantType = await PlantType.findById(plantTypeId);
 
@@ -36,6 +63,7 @@ const attachPlantTypeImage = async (plantTypeId, file) => {
 module.exports = {
   createPlantType,
   getPlantTypes,
+  updatePlantType,
   attachPlantTypeImage,
   getPlantTypesById
 };

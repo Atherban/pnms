@@ -2,21 +2,28 @@ const ApiError = require("../exceptions/ApiError");
 const statusCode = require("../enums/statusCode");
 
 const validate = (schema, property = "body") => {
-  return (req, res, next) => {
-    const { error, value } = schema.validate(req[property], {
-      abortEarly: false,
-      stripUnknown: true
-    });
+  return async (req, res, next) => {
+    try {
+      req[property] = await schema.validateAsync(req[property], {
+        abortEarly: false,
+        stripUnknown: true,
+      });
 
-    if (error) {
-      throw new ApiError(
-        statusCode.BAD_REQUEST,
-        error.details.map(d => d.message).join(", ")
-      );
+      next();
+    } catch (err) {
+      // Joi validation error
+      if (err.isJoi) {
+        return next(
+          new ApiError(
+            statusCode.BAD_REQUEST,
+            err.details.map((d) => d.message).join(", ")
+          )
+        );
+      }
+
+      // ApiError or any other error
+      return next(err);
     }
-    
-    req[property] = value;
-    next();
   };
 };
 

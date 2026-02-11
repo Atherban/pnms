@@ -185,8 +185,8 @@
 			"typeName": "binding"
 		},
 		{
-			"x": -513.9629629629629,
-			"y": 159.43209876543216,
+			"x": -1697.113523167437,
+			"y": -352.02256652700055,
 			"rotation": 0,
 			"isLocked": false,
 			"opacity": 1,
@@ -426,9 +426,9 @@
 			"typeName": "binding"
 		},
 		{
-			"x": 1150.091971511862,
-			"y": 179.36824330005186,
-			"z": 0.6445494282181472,
+			"x": 2312.6397832173334,
+			"y": 190.94016866072855,
+			"z": 0.738912744011871,
 			"meta": {},
 			"id": "camera:page:page",
 			"typeName": "camera"
@@ -1028,8 +1028,8 @@
 			"typeName": "binding"
 		},
 		{
-			"x": -538.1056241426612,
-			"y": 353.9391082819286,
+			"x": -1721.2561843471353,
+			"y": -157.51555701050407,
 			"rotation": 0,
 			"isLocked": false,
 			"opacity": 1,
@@ -1514,8 +1514,8 @@
 			"typeName": "shape"
 		},
 		{
-			"x": -517.6666666666666,
-			"y": -80.07407407407396,
+			"x": -1700.8172268711407,
+			"y": -591.5287393665067,
 			"rotation": 0,
 			"isLocked": false,
 			"opacity": 1,
@@ -1544,7 +1544,9 @@
 		{
 			"followingUserId": null,
 			"opacityForNextShape": 1,
-			"stylesForNextShape": {},
+			"stylesForNextShape": {
+				"tldraw:geo": "rectangle"
+			},
 			"brush": null,
 			"scribbles": [],
 			"cursor": {
@@ -1558,8 +1560,8 @@
 			"screenBounds": {
 				"x": 0,
 				"y": 0,
-				"w": 1513,
-				"h": 531
+				"w": 1510,
+				"h": 590
 			},
 			"insets": [
 				false,

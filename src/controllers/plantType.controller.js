@@ -44,6 +44,25 @@ const getPlantTypesById = async(req,res,next)=>{
   }
 }
 
+const updatePlantType = async(req,res,next)=>{
+  try {
+    
+     const plantType = await plantTypeService.updatePlantType(
+      req.params.id,
+      req.body,
+      req.user
+    );
+
+    res.status(statusCode.OK).json({
+      message: "PlantTypes updates successfully",
+      data: plantType
+    })
+
+  } catch (error) {
+    next(error)
+  }
+}
+
 const uploadPlantTypeImage = async (req, res, next) => {
   try {
     if (!req.file) {
@@ -68,5 +87,6 @@ module.exports = {
   createPlantType,
   getPlantTypes,
   getPlantTypesById,
+  updatePlantType,
   uploadPlantTypeImage
 };

@@ -6,7 +6,7 @@ const authenticate = require("../middlewares/auth.middleware");
 const authorize = require("../middlewares/rbac.middleware");
 const validate = require("../middlewares/validate.middleware");
 const { upload } = require("../middlewares/upload.middleware");
-const { createPlantTypeSchema } = require("../validations/plantType.validation");
+const { createPlantTypeSchema, updatePlantTypeSchema } = require("../validations/plantType.validation");
 const { objectIdSchema } = require("../validations/common.validation");
 
 // Create PlantType (ADMIN)
@@ -33,6 +33,15 @@ router.get(
   authorize("ADMIN", "STAFF", "VIEWER"),
   plantTypeController.getPlantTypesById
 );
+
+// Update plantType
+router.patch(
+  "/:id",
+  authenticate,
+  authorize("ADMIN"),
+  validate(updatePlantTypeSchema),
+  plantTypeController.updatePlantType
+)
 
 // Upload PlantType image (ADMIN)
 router.post(
