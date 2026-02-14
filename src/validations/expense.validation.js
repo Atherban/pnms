@@ -1,6 +1,6 @@
 const Joi = require("joi");
 
-const expenseSchema = Joi.object({
+const createExpenseSchema = Joi.object({
   type: Joi.string()
     .valid(
       "SEED",
@@ -22,6 +22,24 @@ const expenseSchema = Joi.object({
   date: Joi.date().required()
 });
 
+const updateExpenseSchema = Joi.object({
+  type: Joi.string().valid(
+    "SEED",
+    "FERTILIZER",
+    "POT",
+    "SOIL",
+    "WATER",
+    "ELECTRICITY",
+    "TRANSPORT",
+    "TOOLS",
+    "OTHER"
+  ),
+  description: Joi.string().allow("", null),
+  amount: Joi.number().min(0),
+  date: Joi.date()
+}).min(1);
+
 module.exports = {
-  expenseSchema
+  createExpenseSchema,
+  updateExpenseSchema
 };

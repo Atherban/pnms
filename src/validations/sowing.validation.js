@@ -9,7 +9,11 @@ const sowingSchema = Joi.object({
   quantity: Joi.number()
     .integer()
     .min(1)
-    .required()
+    .required(),
+
+  sowingDate: Joi.date().optional(),
+
+  expectedYield: Joi.number().integer().min(0).optional()
 });
 
 module.exports = {

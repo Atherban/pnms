@@ -1,5 +1,6 @@
 const statusCode = require("../enums/statusCode");
 const seedService = require("../services/seed.service");
+const ApiError = require("../exceptions/ApiError");
 
 const createSeed = async (req, res, next) => {
   try {
@@ -68,7 +69,7 @@ const deleteSeedById = async (req, res, next) => {
 const uploadSeedImage = async (req, res, next) => {
   try {
     if (!req.file) {
-      throw new Error("Image file is required");
+      throw new ApiError(statusCode.BAD_REQUEST, "Image file is required");
     }
 
     const seed = await seedService.attachSeedImage(

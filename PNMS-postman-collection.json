@@ -1,8 +1,8 @@
 {
   "info": {
-    "name": "PNMS - Backend API (Domain-Correct)",
+    "name": "PNMS - Backend API (Full Refactor)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "PNMS backend aligned with PlantType + Inventory domain model"
+    "description": "Complete PNMS API collection with auth, master, operations, analytics and CRUD endpoints."
   },
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:5000" },
@@ -11,80 +11,317 @@
     { "key": "plantTypeId", "value": "" },
     { "key": "seedId", "value": "" },
     { "key": "sowingId", "value": "" },
+    { "key": "germinationId", "value": "" },
     { "key": "inventoryId", "value": "" },
-    { "key": "saleId", "value": "" }
+    { "key": "customerId", "value": "" },
+    { "key": "saleId", "value": "" },
+    { "key": "expenseId", "value": "" },
+    { "key": "labourId", "value": "" }
   ],
   "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/health"
+          }
+        }
+      ]
+    },
     {
       "name": "Auth",
       "item": [
         {
           "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json?.data?.token) pm.collectionVariables.set('token', json.data.token);",
+                  "if (json?.data?.user?._id) pm.collectionVariables.set('userId', json.data.user._id);"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/api/auth/login",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"password123\"\n}"
-            }
+            },
+            "url": "{{baseUrl}}/api/auth/login"
           }
         }
       ]
     },
     {
-      "name": "PlantTypes",
+      "name": "Users (ADMIN)",
       "item": [
         {
-          "name": "Create PlantType",
+          "name": "Create User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json?.data?._id) pm.collectionVariables.set('userId', json.data._id);"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/api/plant-types",
             "header": [
               { "key": "Authorization", "value": "Bearer {{token}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Tomato\",\n  \"category\": \"VEGETABLE\"\n}"
-            }
+              "raw": "{\n  \"name\": \"Staff One\",\n  \"email\": \"staff1@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"STAFF\"\n}"
+            },
+            "url": "{{baseUrl}}/api/users"
           }
         },
         {
-          "name": "Upload PlantType Image",
-          "request": {
-            "method": "POST",
-            "url": "{{baseUrl}}/api/plant-types/{{plantTypeId}}/image",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "body": { "mode": "formdata", "formdata": [{ "key": "image", "type": "file" }] }
-          }
-        },
-        {
-          "name": "Get PlantTypes",
+          "name": "Get Users",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/plant-types",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/users"
+          }
+        },
+        {
+          "name": "Get User By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/users/{{userId}}"
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Staff One Updated\",\n  \"role\": \"VIEWER\",\n  \"isActive\": true\n}"
+            },
+            "url": "{{baseUrl}}/api/users/{{userId}}"
+          }
+        },
+        {
+          "name": "Disable User",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/users/{{userId}}"
           }
         }
       ]
     },
     {
-      "name": "Seeds",
+      "name": "Plant Types (ADMIN write)",
+      "item": [
+        {
+          "name": "Create Plant Type",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json?.data?._id) pm.collectionVariables.set('plantTypeId', json.data._id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Tomato\",\n  \"category\": \"VEGETABLE\",\n  \"variety\": \"Cherry\",\n  \"lifecycleDays\": 75,\n  \"sellingPrice\": 35,\n  \"minStockLevel\": 20,\n  \"defaultCostPrice\": 12,\n  \"growthStages\": [\n    { \"stage\": \"SOWN\", \"dayFrom\": 0, \"dayTo\": 7 },\n    { \"stage\": \"GERMINATED\", \"dayFrom\": 8, \"dayTo\": 21 },\n    { \"stage\": \"READY_FOR_SALE\", \"dayFrom\": 22, \"dayTo\": 75 }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/api/plant-types"
+          }
+        },
+        {
+          "name": "Get Plant Types",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/plant-types"
+          }
+        },
+        {
+          "name": "Get Plant Type By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/plant-types/{{plantTypeId}}"
+          }
+        },
+        {
+          "name": "Update Plant Type",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sellingPrice\": 40,\n  \"minStockLevel\": 35\n}"
+            },
+            "url": "{{baseUrl}}/api/plant-types/{{plantTypeId}}"
+          }
+        },
+        {
+          "name": "Upload Plant Type Image",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "image", "type": "file", "src": "" }
+              ]
+            },
+            "url": "{{baseUrl}}/api/plant-types/{{plantTypeId}}/image"
+          }
+        },
+        {
+          "name": "Delete Plant Type",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/plant-types/{{plantTypeId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Seeds (STAFF write)",
       "item": [
         {
           "name": "Create Seed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json?.data?._id) pm.collectionVariables.set('seedId', json.data._id);"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/api/seeds",
             "header": [
               { "key": "Authorization", "value": "Bearer {{token}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Tomato Seed Batch\",\n  \"plantType\": \"{{plantTypeId}}\",\n  \"supplierName\": \"Agro Corp\",\n  \"totalPurchased\": 1000,\n  \"purchaseDate\": \"2026-01-01\",\n  \"expiryDate\": \"2026-12-31\"\n}"
-            }
+              "raw": "{\n  \"name\": \"Tomato Seed Batch A\",\n  \"plantType\": \"{{plantTypeId}}\",\n  \"supplierName\": \"Agro Corp\",\n  \"totalPurchased\": 1000,\n  \"purchaseDate\": \"2026-01-01\",\n  \"expiryDate\": \"2026-12-31\"\n}"
+            },
+            "url": "{{baseUrl}}/api/seeds"
+          }
+        },
+        {
+          "name": "Get Seeds",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/seeds"
+          }
+        },
+        {
+          "name": "Get Seed By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/seeds/{{seedId}}"
+          }
+        },
+        {
+          "name": "Update Seed",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"supplierName\": \"Agro Corp Updated\",\n  \"expiryDate\": \"2027-01-31\"\n}"
+            },
+            "url": "{{baseUrl}}/api/seeds/{{seedId}}"
+          }
+        },
+        {
+          "name": "Upload Seed Image",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "image", "type": "file", "src": "" }
+              ]
+            },
+            "url": "{{baseUrl}}/api/seeds/{{seedId}}/image"
+          }
+        },
+        {
+          "name": "Delete Seed (Soft)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/seeds/{{seedId}}"
           }
         }
       ]
@@ -93,18 +330,83 @@
       "name": "Sowing",
       "item": [
         {
-          "name": "Sow Seeds",
+          "name": "Create Sowing",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json?.data?._id) pm.collectionVariables.set('sowingId', json.data._id);"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/api/sowing",
             "header": [
               { "key": "Authorization", "value": "Bearer {{token}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"seedId\": \"{{seedId}}\",\n  \"quantity\": 100\n}"
+              "raw": "{\n  \"seedId\": \"{{seedId}}\",\n  \"quantity\": 200,\n  \"sowingDate\": \"2026-02-10\",\n  \"expectedYield\": 170\n}"
+            },
+            "url": "{{baseUrl}}/api/sowing"
+          }
+        },
+        {
+          "name": "Get Sowings",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/sowing"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Germination",
+      "item": [
+        {
+          "name": "Record Germination",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json?.data?._id) pm.collectionVariables.set('germinationId', json.data._id);",
+                  "if (json?.data?.inventoryBatch) pm.collectionVariables.set('inventoryId', json.data.inventoryBatch);"
+                ]
+              }
             }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sowingId\": \"{{sowingId}}\",\n  \"germinatedSeeds\": 160,\n  \"discardedSeeds\": 10,\n  \"germinationDate\": \"2026-02-18\"\n}"
+            },
+            "url": "{{baseUrl}}/api/germination"
+          }
+        },
+        {
+          "name": "Get Germinations",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/germination"
           }
         }
       ]
@@ -113,11 +415,127 @@
       "name": "Inventory",
       "item": [
         {
+          "name": "Create Purchased Inventory",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json?.data?._id) pm.collectionVariables.set('inventoryId', json.data._id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plantType\": \"{{plantTypeId}}\",\n  \"quantity\": 50,\n  \"unitCost\": 15,\n  \"purchaseDate\": \"2026-02-20\",\n  \"paymentMode\": \"CASH\",\n  \"supplierName\": \"Local Nursery\",\n  \"note\": \"Purchased ready saplings\"\n}"
+            },
+            "url": "{{baseUrl}}/api/inventory"
+          }
+        },
+        {
           "name": "Get Inventory",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/inventory",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/inventory"
+          }
+        },
+        {
+          "name": "Get Inventory By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/inventory/{{inventoryId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Customers",
+      "item": [
+        {
+          "name": "Create Customer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json?.data?._id) pm.collectionVariables.set('customerId', json.data._id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Rahul Sharma\",\n  \"mobileNumber\": \"9876543210\",\n  \"address\": \"Bengaluru\"\n}"
+            },
+            "url": "{{baseUrl}}/api/customers"
+          }
+        },
+        {
+          "name": "Get Customers",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/customers"
+          }
+        },
+        {
+          "name": "Get Customer By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/customers/{{customerId}}"
+          }
+        },
+        {
+          "name": "Update Customer",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"address\": \"Hyderabad\"\n}"
+            },
+            "url": "{{baseUrl}}/api/customers/{{customerId}}"
+          }
+        },
+        {
+          "name": "Delete Customer",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/customers/{{customerId}}"
           }
         }
       ]
@@ -127,30 +545,218 @@
       "item": [
         {
           "name": "Create Sale",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json?._id) pm.collectionVariables.set('saleId', json._id);"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/api/sales",
             "header": [
               { "key": "Authorization", "value": "Bearer {{token}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"items\": [{ \"inventoryId\": \"{{inventoryId}}\", \"quantity\": 2 }],\n  \"paymentMode\": \"CASH\"\n}"
-            }
+              "raw": "{\n  \"customer\": \"{{customerId}}\",\n  \"items\": [\n    { \"inventoryId\": \"{{inventoryId}}\", \"quantity\": 2 }\n  ],\n  \"paymentMode\": \"CASH\"\n}"
+            },
+            "url": "{{baseUrl}}/api/sales"
+          }
+        },
+        {
+          "name": "Get Sales",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/sales"
+          }
+        },
+        {
+          "name": "Get Sale By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/sales/{{saleId}}"
           }
         }
       ]
     },
     {
-      "name": "Profit",
+      "name": "Expenses",
+      "item": [
+        {
+          "name": "Create Expense",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json?.data?._id) pm.collectionVariables.set('expenseId', json.data._id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"SOIL\",\n  \"description\": \"Soil mix purchase\",\n  \"amount\": 2500,\n  \"date\": \"2026-02-05\"\n}"
+            },
+            "url": "{{baseUrl}}/api/expenses"
+          }
+        },
+        {
+          "name": "Get Expenses",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/expenses"
+          }
+        },
+        {
+          "name": "Get Expense By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/expenses/{{expenseId}}"
+          }
+        },
+        {
+          "name": "Update Expense",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 2700\n}"
+            },
+            "url": "{{baseUrl}}/api/expenses/{{expenseId}}"
+          }
+        },
+        {
+          "name": "Delete Expense",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/expenses/{{expenseId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Labours",
+      "item": [
+        {
+          "name": "Create Labour",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json?.data?._id) pm.collectionVariables.set('labourId', json.data._id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Worker A\",\n  \"workType\": \"WATERING\",\n  \"hoursWorked\": 6,\n  \"wagePerHour\": 120,\n  \"date\": \"2026-02-06\"\n}"
+            },
+            "url": "{{baseUrl}}/api/labours"
+          }
+        },
+        {
+          "name": "Get Labours",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/labours"
+          }
+        },
+        {
+          "name": "Get Labour By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/labours/{{labourId}}"
+          }
+        },
+        {
+          "name": "Update Labour",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"wagePerHour\": 140\n}"
+            },
+            "url": "{{baseUrl}}/api/labours/{{labourId}}"
+          }
+        },
+        {
+          "name": "Delete Labour",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/labours/{{labourId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Profit (ADMIN)",
       "item": [
         {
           "name": "Get Profit",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/profit?startDate=2026-01-01&endDate=2026-12-31",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/profit?startDate=2026-01-01&endDate=2026-12-31"
           }
         }
       ]

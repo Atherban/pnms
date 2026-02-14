@@ -1,6 +1,6 @@
 const Joi = require("joi");
 
-const customerSchema = Joi.object({
+const createCustomerSchema = Joi.object({
   name: Joi.string().required(),
 
   mobileNumber: Joi.string()
@@ -10,6 +10,15 @@ const customerSchema = Joi.object({
   address: Joi.string().optional()
 });
 
+const updateCustomerSchema = Joi.object({
+  name: Joi.string().optional(),
+  mobileNumber: Joi.string()
+    .pattern(/^[6-9]\d{9}$/)
+    .optional(),
+  address: Joi.string().allow("", null).optional()
+}).min(1);
+
 module.exports = {
-  customerSchema
+  createCustomerSchema,
+  updateCustomerSchema
 };

@@ -5,7 +5,9 @@ const germinationSchema = Joi.object({
 
   germinatedSeeds: Joi.number().integer().min(0).required(),
 
-  germinationDate: Joi.date().required()
+  discardedSeeds: Joi.number().integer().min(0).default(0),
+
+  germinationDate: Joi.date().optional()
 });
 
 module.exports = {

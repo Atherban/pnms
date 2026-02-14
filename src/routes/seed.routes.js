@@ -17,7 +17,7 @@ const { upload } = require("../middlewares/upload.middleware");
 router.post(
   "/",
   authenticate,
-  authorize("ADMIN"),
+  authorize("STAFF"),
   validate(createSeedSchema),
   seedController.createSeed
 );
@@ -43,7 +43,7 @@ router.get(
 router.patch(
   "/:id",
   authenticate,
-  authorize("ADMIN"),
+  authorize("STAFF"),
   validate(objectIdSchema, "params"),
   validate(updateSeedSchema),
   seedController.updateSeedById
@@ -53,7 +53,7 @@ router.patch(
 router.delete(
   "/:id",
   authenticate,
-  authorize("ADMIN"),
+  authorize("STAFF"),
   validate(objectIdSchema, "params"),
   seedController.deleteSeedById
 );
@@ -62,7 +62,7 @@ router.delete(
 router.post(
   "/:id/image",
   authenticate,
-  authorize("ADMIN"),
+  authorize("STAFF"),
   validate(objectIdSchema, "params"),
   upload.single("image"),
   seedController.uploadSeedImage

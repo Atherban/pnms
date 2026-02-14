@@ -31,6 +31,7 @@ router.get(
   "/:id",
   authenticate,
   authorize("ADMIN", "STAFF", "VIEWER"),
+  validate(objectIdSchema, "params"),
   plantTypeController.getPlantTypesById
 );
 
@@ -39,9 +40,18 @@ router.patch(
   "/:id",
   authenticate,
   authorize("ADMIN"),
+  validate(objectIdSchema, "params"),
   validate(updatePlantTypeSchema),
   plantTypeController.updatePlantType
 )
+
+router.delete(
+  "/:id",
+  authenticate,
+  authorize("ADMIN"),
+  validate(objectIdSchema, "params"),
+  plantTypeController.deletePlantType
+);
 
 // Upload PlantType image (ADMIN)
 router.post(

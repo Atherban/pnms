@@ -1,5 +1,6 @@
 const statusCode = require("../enums/statusCode");
 const plantTypeService = require("../services/plantType.service");
+const ApiError = require("../exceptions/ApiError");
 
 const createPlantType = async (req, res, next) => {
   try {
@@ -66,7 +67,7 @@ const updatePlantType = async(req,res,next)=>{
 const uploadPlantTypeImage = async (req, res, next) => {
   try {
     if (!req.file) {
-      throw new Error("Image file is required");
+      throw new ApiError(statusCode.BAD_REQUEST, "Image file is required");
     }
 
     const plantType = await plantTypeService.attachPlantTypeImage(
@@ -83,10 +84,23 @@ const uploadPlantTypeImage = async (req, res, next) => {
   }
 };
 
+const deletePlantType = async (req, res, next) => {
+  try {
+    const plantType = await plantTypeService.deletePlantType(req.params.id);
+    res.status(statusCode.OK).json({
+      message: "PlantType deleted successfully",
+      data: plantType
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   createPlantType,
   getPlantTypes,
   getPlantTypesById,
   updatePlantType,
-  uploadPlantTypeImage
+  uploadPlantTypeImage,
+  deletePlantType
 };

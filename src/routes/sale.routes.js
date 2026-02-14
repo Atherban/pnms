@@ -12,7 +12,7 @@ const { objectIdSchema } = require("../validations/common.validation");
 router.post(
   "/",
   authenticate,
-  authorize("ADMIN", "STAFF"),
+  authorize("STAFF","ADMIN"),
   validate(createSaleSchema),
   saleController.createSale
 );
@@ -21,7 +21,7 @@ router.post(
 router.get(
   "/",
   authenticate,
-  authorize("ADMIN", "STAFF"),
+  authorize("ADMIN", "STAFF", "VIEWER"),
   saleController.getAllSales
 );
 
@@ -29,7 +29,7 @@ router.get(
 router.get(
   "/:id",
   authenticate,
-  authorize("ADMIN", "STAFF"),
+  authorize("ADMIN", "STAFF", "VIEWER"),
   validate(objectIdSchema, "params"),
   saleController.getSaleById
 );

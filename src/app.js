@@ -11,6 +11,9 @@ const authRoutes = require("./routes/auth.routes");
 const userRoutes = require("./routes/user.routes");
 const plantTypeRoutes = require("./routes/plantType.routes");
 const inventoryRoutes = require("./routes/inventory.routes");
+const customerRoutes = require("./routes/customer.routes");
+const expenseRoutes = require("./routes/expense.routes");
+const labourRoutes = require("./routes/labour.routes");
 
 
 const app = express();
@@ -34,6 +37,9 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/plant-types", plantTypeRoutes);
 app.use("/api/inventory", inventoryRoutes);
+app.use("/api/customers", customerRoutes);
+app.use("/api/expenses", expenseRoutes);
+app.use("/api/labours", labourRoutes);
 
 
 // serve uploaded files

@@ -2,6 +2,12 @@ const Seed = require("../models/Seed.model");
 const PlantType = require("../models/PlantType.model");
 const ApiError = require("../exceptions/ApiError");
 
+const SEED_POPULATION = [
+  { path: "plantType", select: "name category variety sellingPrice" },
+  { path: "createdBy", select: "name email role" },
+  { path: "updatedBy", select: "name email role" }
+];
+
 // Create seed (ADMIN)
 const createSeed = async (data, user) => {
   const plantType = await PlantType.findById(data.plantType);
@@ -10,16 +16,18 @@ const createSeed = async (data, user) => {
     throw new ApiError(400, "Invalid plant type");
   }
 
-  return Seed.create({
+  const seed = await Seed.create({
     ...data,
     createdBy: user.userId
   });
+
+  return Seed.findById(seed._id).populate(SEED_POPULATION);
 };
 
 // Get all seeds
 const getAllSeeds = async () => {
   return Seed.find({ isDeleted: false })
-    .populate("plantType");
+    .populate(SEED_POPULATION);
 };
 
 // Get seed by ID
@@ -27,7 +35,7 @@ const getSeedById = async (seedId) => {
   const seed = await Seed.findOne({
     _id: seedId,
     isDeleted: false
-  }).populate("plantType");
+  }).populate(SEED_POPULATION);
 
   if (!seed) {
     throw new ApiError(404, "Seed not found");
@@ -45,7 +53,7 @@ const updateSeedById = async (seedId, data, user) => {
       updatedBy: user.userId
     },
     { new: true, runValidators: true }
-  ).populate("plantType");
+  ).populate(SEED_POPULATION);
 
   if (!seed) {
     throw new ApiError(404, "Seed not found");
@@ -60,7 +68,7 @@ const deleteSeedById = async (seedId) => {
     { _id: seedId, isDeleted: false },
     { isDeleted: true },
     { new: true }
-  );
+  ).populate(SEED_POPULATION);
 
   if (!seed) {
     throw new ApiError(404, "Seed not found");
@@ -73,7 +81,7 @@ const attachSeedImage = async (seedId, file) => {
   const seed = await Seed.findOne({
     _id: seedId,
     isDeleted: false
-  });
+  }).populate(SEED_POPULATION);
 
   if (!seed) {
     throw new ApiError(404, "Seed not found");
@@ -84,14 +92,14 @@ const attachSeedImage = async (seedId, file) => {
   });
 
   await seed.save();
-  return seed;
+  return Seed.findById(seed._id).populate(SEED_POPULATION);
 };
 
 const useSeeds = async (seedId, quantity) => {
   const seed = await Seed.findOne({
     _id: seedId,
     isDeleted: false
-  });
+  }).populate(SEED_POPULATION);
 
   if (!seed) {
     throw new ApiError(404, "Seed not found");
@@ -110,7 +118,7 @@ const useSeeds = async (seedId, quantity) => {
   seed.seedsUsed += quantity;
   await seed.save();
 
-  return seed;
+  return Seed.findById(seed._id).populate(SEED_POPULATION);
 };
 
 module.exports = {

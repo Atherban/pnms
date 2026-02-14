@@ -2,11 +2,6 @@ const mongoose = require("mongoose");
 
 const saleSchema = new mongoose.Schema(
   {
-    customer: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Customer"
-    },
-
     items: [
       {
         inventory: {
@@ -25,14 +20,67 @@ const saleSchema = new mongoose.Schema(
           type: Number,
           required: true,
           min: 0
-        }
+        },
+
+        costAtSale: {
+          type: Number,
+          required: true,
+          min: 0
+        },
+
+        profit: {
+          type: Number,
+          required: true
+        },
+
+        batchDeductions: [
+          {
+            inventory: {
+              type: mongoose.Schema.Types.ObjectId,
+              ref: "PlantInventory",
+              required: true
+            },
+            quantity: {
+              type: Number,
+              required: true,
+              min: 1
+            },
+            unitCost: {
+              type: Number,
+              required: true,
+              min: 0
+            }
+          }
+        ]
       }
     ],
 
+    totalCost: {
+      type: Number,
+      required: true,
+      min: 0
+    },
+
+    totalProfit: {
+      type: Number,
+      required: true
+    },
+
+    grossMarginPercent: {
+      type: Number,
+      default: 0
+    },
+
+    // Backward compatibility field for old UI integrations
     totalAmount: {
       type: Number,
       required: true,
       min: 0
+    },
+
+    customer: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Customer"
     },
 
     paymentMode: {

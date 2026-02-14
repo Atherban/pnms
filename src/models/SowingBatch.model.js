@@ -16,7 +16,14 @@ const sowingBatchSchema = new mongoose.Schema(
 
     quantitySown: {
       type: Number,
-      required: true
+      required: true,
+      min: 1
+    },
+
+    quantityGerminated: {
+      type: Number,
+      default: 0,
+      min: 0
     },
 
     sowingDate: {
@@ -35,5 +42,12 @@ const sowingBatchSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+sowingBatchSchema.virtual("quantityPendingGermination").get(function () {
+  return Math.max(this.quantitySown - this.quantityGerminated, 0);
+});
+
+sowingBatchSchema.set("toJSON", { virtuals: true });
+sowingBatchSchema.set("toObject", { virtuals: true });
 
 module.exports = mongoose.model("SowingBatch", sowingBatchSchema);

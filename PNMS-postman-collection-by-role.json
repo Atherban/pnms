@@ -1,0 +1,216 @@
+{
+  "info": {
+    "name": "PNMS - Backend API (Role Based)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Role-oriented PNMS collection for ADMIN, STAFF, VIEWER testing."
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000" },
+    { "key": "adminToken", "value": "" },
+    { "key": "staffToken", "value": "" },
+    { "key": "viewerToken", "value": "" },
+    { "key": "userId", "value": "" },
+    { "key": "plantTypeId", "value": "" },
+    { "key": "seedId", "value": "" },
+    { "key": "sowingId", "value": "" },
+    { "key": "germinationId", "value": "" },
+    { "key": "inventoryId", "value": "" },
+    { "key": "customerId", "value": "" },
+    { "key": "saleId", "value": "" },
+    { "key": "expenseId", "value": "" },
+    { "key": "labourId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Setup Logins",
+      "item": [
+        {
+          "name": "Admin Login",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const j=pm.response.json(); if(j?.data?.token) pm.collectionVariables.set('adminToken', j.data.token);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"password123\"\n}" },
+            "url": "{{baseUrl}}/api/auth/login"
+          }
+        },
+        {
+          "name": "Staff Login",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const j=pm.response.json(); if(j?.data?.token) pm.collectionVariables.set('staffToken', j.data.token);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"staff1@example.com\",\n  \"password\": \"password123\"\n}" },
+            "url": "{{baseUrl}}/api/auth/login"
+          }
+        },
+        {
+          "name": "Viewer Login",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const j=pm.response.json(); if(j?.data?.token) pm.collectionVariables.set('viewerToken', j.data.token);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"viewer1@example.com\",\n  \"password\": \"password123\"\n}" },
+            "url": "{{baseUrl}}/api/auth/login"
+          }
+        }
+      ]
+    },
+    {
+      "name": "ADMIN",
+      "item": [
+        {
+          "name": "Create User",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const j=pm.response.json(); if(j?.data?._id) pm.collectionVariables.set('userId', j.data._id);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Viewer One\",\n  \"email\": \"viewer1@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"VIEWER\"\n}" },
+            "url": "{{baseUrl}}/api/users"
+          }
+        },
+        { "name": "Get Users", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }], "url": "{{baseUrl}}/api/users" } },
+        { "name": "Get User By ID", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }], "url": "{{baseUrl}}/api/users/{{userId}}" } },
+        {
+          "name": "Create Plant Type",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const j=pm.response.json(); if(j?.data?._id) pm.collectionVariables.set('plantTypeId', j.data._id);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Capsicum\",\n  \"category\": \"VEGETABLE\",\n  \"variety\": \"Green\",\n  \"lifecycleDays\": 80,\n  \"sellingPrice\": 42,\n  \"minStockLevel\": 30,\n  \"defaultCostPrice\": 16\n}" },
+            "url": "{{baseUrl}}/api/plant-types"
+          }
+        },
+        { "name": "Get Profit", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }], "url": "{{baseUrl}}/api/profit?startDate=2026-01-01&endDate=2026-12-31" } }
+      ]
+    },
+    {
+      "name": "STAFF",
+      "item": [
+        {
+          "name": "Create Seed",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const j=pm.response.json(); if(j?.data?._id) pm.collectionVariables.set('seedId', j.data._id);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{staffToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Capsicum Seed Batch A\",\n  \"plantType\": \"{{plantTypeId}}\",\n  \"supplierName\": \"Agro Corp\",\n  \"totalPurchased\": 1200,\n  \"purchaseDate\": \"2026-01-05\",\n  \"expiryDate\": \"2026-12-31\"\n}" },
+            "url": "{{baseUrl}}/api/seeds"
+          }
+        },
+        {
+          "name": "Create Sowing",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const j=pm.response.json(); if(j?.data?._id) pm.collectionVariables.set('sowingId', j.data._id);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{staffToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"seedId\": \"{{seedId}}\",\n  \"quantity\": 250,\n  \"sowingDate\": \"2026-02-10\",\n  \"expectedYield\": 210\n}" },
+            "url": "{{baseUrl}}/api/sowing"
+          }
+        },
+        {
+          "name": "Record Germination",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const j=pm.response.json(); if(j?.data?._id) pm.collectionVariables.set('germinationId', j.data._id); if(j?.data?.inventoryBatch) pm.collectionVariables.set('inventoryId', j.data.inventoryBatch);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{staffToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"sowingId\": \"{{sowingId}}\",\n  \"germinatedSeeds\": 200,\n  \"discardedSeeds\": 15,\n  \"germinationDate\": \"2026-02-18\"\n}" },
+            "url": "{{baseUrl}}/api/germination"
+          }
+        },
+        {
+          "name": "Create Purchased Inventory",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{staffToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"plantType\": \"{{plantTypeId}}\",\n  \"quantity\": 40,\n  \"unitCost\": 18,\n  \"purchaseDate\": \"2026-02-20\",\n  \"paymentMode\": \"UPI\",\n  \"supplierName\": \"Local Nursery\",\n  \"note\": \"Backup purchased stock\"\n}" },
+            "url": "{{baseUrl}}/api/inventory"
+          }
+        },
+        {
+          "name": "Create Customer",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const j=pm.response.json(); if(j?.data?._id) pm.collectionVariables.set('customerId', j.data._id);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{staffToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Anita Rao\",\n  \"mobileNumber\": \"9876543210\",\n  \"address\": \"Bengaluru\"\n}" },
+            "url": "{{baseUrl}}/api/customers"
+          }
+        },
+        {
+          "name": "Create Sale",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const j=pm.response.json(); if(j?._id) pm.collectionVariables.set('saleId', j._id);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{staffToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"customer\": \"{{customerId}}\",\n  \"items\": [\n    { \"inventoryId\": \"{{inventoryId}}\", \"quantity\": 3 }\n  ],\n  \"paymentMode\": \"CASH\"\n}" },
+            "url": "{{baseUrl}}/api/sales"
+          }
+        },
+        {
+          "name": "Create Expense",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const j=pm.response.json(); if(j?.data?._id) pm.collectionVariables.set('expenseId', j.data._id);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{staffToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"type\": \"SOIL\",\n  \"description\": \"Soil mix\",\n  \"amount\": 2200,\n  \"date\": \"2026-02-05\"\n}" },
+            "url": "{{baseUrl}}/api/expenses"
+          }
+        },
+        {
+          "name": "Create Labour",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const j=pm.response.json(); if(j?.data?._id) pm.collectionVariables.set('labourId', j.data._id);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{staffToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Worker A\",\n  \"workType\": \"WATERING\",\n  \"hoursWorked\": 6,\n  \"wagePerHour\": 120,\n  \"date\": \"2026-02-06\"\n}" },
+            "url": "{{baseUrl}}/api/labours"
+          }
+        }
+      ]
+    },
+    {
+      "name": "VIEWER",
+      "item": [
+        { "name": "Get Plant Types", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{viewerToken}}" }], "url": "{{baseUrl}}/api/plant-types" } },
+        { "name": "Get Seeds", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{viewerToken}}" }], "url": "{{baseUrl}}/api/seeds" } },
+        { "name": "Get Sowings", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{viewerToken}}" }], "url": "{{baseUrl}}/api/sowing" } },
+        { "name": "Get Germinations", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{viewerToken}}" }], "url": "{{baseUrl}}/api/germination" } },
+        { "name": "Get Inventory", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{viewerToken}}" }], "url": "{{baseUrl}}/api/inventory" } },
+        { "name": "Get Sales", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{viewerToken}}" }], "url": "{{baseUrl}}/api/sales" } },
+        { "name": "Get Customers", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{viewerToken}}" }], "url": "{{baseUrl}}/api/customers" } },
+        { "name": "Get Expenses", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{viewerToken}}" }], "url": "{{baseUrl}}/api/expenses" } },
+        { "name": "Get Labours", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{viewerToken}}" }], "url": "{{baseUrl}}/api/labours" } }
+      ]
+    }
+  ]
+}

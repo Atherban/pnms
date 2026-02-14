@@ -1,13 +1,29 @@
+const statusCode = require("../enums/statusCode");
+
 const errorHandler = (err, req, res, next) => {
-  const isOperational = err.isOperational === true;
+  let httpStatus = statusCode.INTERNAL_SERVER_ERROR;
+  let message = "Something went wrong. Please try again later.";
+  const details = [];
 
-  const statusCode = isOperational ? err.statusCode : 500;
+  if (err.isOperational === true) {
+    httpStatus = err.statusCode;
+    message = err.message;
+  } else if (err.name === "ValidationError") {
+    httpStatus = statusCode.BAD_REQUEST;
+    message = "Validation failed";
+    details.push(...Object.values(err.errors).map((e) => e.message));
+  } else if (err.name === "CastError") {
+    httpStatus = statusCode.BAD_REQUEST;
+    message = `Invalid ${err.path}`;
+  } else if (err.code === 11000) {
+    httpStatus = statusCode.CONFLICT;
+    message = "Duplicate value detected";
+  } else if (err.name === "MulterError") {
+    httpStatus = statusCode.BAD_REQUEST;
+    message = err.message;
+  }
 
-  const message = isOperational
-    ? err.message
-    : "Something went wrong. Please try again later.";
-
-  if (!isOperational) {
+  if (httpStatus === statusCode.INTERNAL_SERVER_ERROR) {
     console.error({
       message: err.message,
       stack: err.stack,
@@ -16,9 +32,10 @@ const errorHandler = (err, req, res, next) => {
     });
   }
 
-  res.status(statusCode).json({
+  res.status(httpStatus).json({
     success: false,
-    message
+    message,
+    ...(details.length ? { details } : {})
   });
 };
 

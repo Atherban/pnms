@@ -2,6 +2,9 @@ const User = require("../models/User.model");
 const ApiError = require("../exceptions/ApiError");
 const statusCode = require("../enums/statusCode");
 
+const USER_LIST_SELECT = "-password";
+const USER_POPULATION = { path: "createdBy", select: "name email role" };
+
 // Create user (ADMIN)
 const createUser = async (data, adminUser) => {
   const existing = await User.findOne({ email: data.email });
@@ -9,20 +12,28 @@ const createUser = async (data, adminUser) => {
     throw new ApiError(statusCode.BAD_REQUEST, "User already exists");
   }
 
-  return User.create({
+  const user = await User.create({
     ...data,
     createdBy: adminUser.userId
   });
+
+  return User.findById(user._id)
+    .select(USER_LIST_SELECT)
+    .populate(USER_POPULATION);
 };
 
 // Get all users (ADMIN)
 const getUsers = async () => {
-  return User.find().select("-password");
+  return User.find()
+    .select(USER_LIST_SELECT)
+    .populate(USER_POPULATION);
 };
 
 // Get user by ID
 const getUserById = async (userId) => {
-  const user = await User.findById(userId).select("-password");
+  const user = await User.findById(userId)
+    .select(USER_LIST_SELECT)
+    .populate(USER_POPULATION);
   if (!user) {
     throw new ApiError(statusCode.NOT_FOUND, "User not found");
   }
@@ -35,7 +46,9 @@ const updateUser = async (userId, data) => {
     userId,
     data,
     { new: true, runValidators: true }
-  ).select("-password");
+  )
+    .select(USER_LIST_SELECT)
+    .populate(USER_POPULATION);
 
   if (!user) {
     throw new ApiError(statusCode.NOT_FOUND, "User not found");
@@ -50,7 +63,9 @@ const disableUser = async (userId) => {
     userId,
     { isActive: false },
     { new: true }
-  );
+  )
+    .select(USER_LIST_SELECT)
+    .populate(USER_POPULATION);
 
   if (!user) {
     throw new ApiError(statusCode.NOT_FOUND, "User not found");

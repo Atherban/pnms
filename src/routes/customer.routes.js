@@ -1,28 +1,29 @@
 const express = require("express");
 const router = express.Router();
 
-const inventoryController = require("../controllers/inventory.controller");
+const customerController = require("../controllers/customer.controller");
 const authenticate = require("../middlewares/auth.middleware");
 const authorize = require("../middlewares/rbac.middleware");
 const validate = require("../middlewares/validate.middleware");
 const { objectIdSchema } = require("../validations/common.validation");
 const {
-  createPurchasedInventorySchema
-} = require("../validations/inventory.validation");
+  createCustomerSchema,
+  updateCustomerSchema
+} = require("../validations/customer.validation");
 
 router.post(
   "/",
   authenticate,
   authorize("STAFF"),
-  validate(createPurchasedInventorySchema),
-  inventoryController.createInventory
+  validate(createCustomerSchema),
+  customerController.createCustomer
 );
 
 router.get(
   "/",
   authenticate,
   authorize("ADMIN", "STAFF", "VIEWER"),
-  inventoryController.getInventory
+  customerController.getCustomers
 );
 
 router.get(
@@ -30,7 +31,24 @@ router.get(
   authenticate,
   authorize("ADMIN", "STAFF", "VIEWER"),
   validate(objectIdSchema, "params"),
-  inventoryController.getInventoryById
+  customerController.getCustomerById
+);
+
+router.patch(
+  "/:id",
+  authenticate,
+  authorize("STAFF"),
+  validate(objectIdSchema, "params"),
+  validate(updateCustomerSchema),
+  customerController.updateCustomer
+);
+
+router.delete(
+  "/:id",
+  authenticate,
+  authorize("STAFF"),
+  validate(objectIdSchema, "params"),
+  customerController.deleteCustomer
 );
 
 module.exports = router;

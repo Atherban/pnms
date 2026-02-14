@@ -4,7 +4,7 @@ const germinationSchema = new mongoose.Schema(
   {
     sowingId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Sowing",
+      ref: "SowingBatch",
       required: true
     },
     germinatedSeeds: {
@@ -12,9 +12,18 @@ const germinationSchema = new mongoose.Schema(
       required: true,
       min: 0
     },
+    discardedSeeds: {
+      type: Number,
+      min: 0,
+      default: 0
+    },
     germinationDate: {
       type: Date,
       default: Date.now
+    },
+    inventoryBatch: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "PlantInventory"
     },
     performedBy: {
       type: mongoose.Schema.Types.ObjectId,

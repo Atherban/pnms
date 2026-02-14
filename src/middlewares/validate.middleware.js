@@ -7,6 +7,8 @@ const validate = (schema, property = "body") => {
       req[property] = await schema.validateAsync(req[property], {
         abortEarly: false,
         stripUnknown: true,
+        convert: true,
+        errors: { wrap: { label: "" } },
       });
 
       next();
