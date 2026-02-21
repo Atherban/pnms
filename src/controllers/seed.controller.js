@@ -86,11 +86,28 @@ const uploadSeedImage = async (req, res, next) => {
   }
 };
 
+const removeSeedImage = async (req, res, next) => {
+  try {
+    const seed = await seedService.removeSeedImage(
+      req.params.id,
+      req.params.imageId
+    );
+
+    res.status(statusCode.OK).json({
+      message: "Seed image removed successfully",
+      data: seed
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   createSeed,
   getSeeds,
   getSeedById,
   updateSeedById,
   deleteSeedById,
-  uploadSeedImage
+  uploadSeedImage,
+  removeSeedImage
 };

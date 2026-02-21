@@ -1,6 +1,7 @@
 const Seed = require("../models/Seed.model");
 const PlantType = require("../models/PlantType.model");
 const ApiError = require("../exceptions/ApiError");
+const { removeUploadedFile } = require("../utils/uploadFile.util");
 
 const SEED_POPULATION = [
   { path: "plantType", select: "name category variety sellingPrice images" },
@@ -95,6 +96,29 @@ const attachSeedImage = async (seedId, file) => {
   return Seed.findById(seed._id).populate(SEED_POPULATION);
 };
 
+const removeSeedImage = async (seedId, imageId) => {
+  const seed = await Seed.findOne({
+    _id: seedId,
+    isDeleted: false
+  }).populate(SEED_POPULATION);
+
+  if (!seed) {
+    throw new ApiError(404, "Seed not found");
+  }
+
+  const image = seed.images.id(imageId);
+  if (!image) {
+    throw new ApiError(404, "Image not found");
+  }
+
+  const { fileName } = image;
+  image.deleteOne();
+  await seed.save();
+  await removeUploadedFile(fileName);
+
+  return Seed.findById(seed._id).populate(SEED_POPULATION);
+};
+
 const useSeeds = async (seedId, quantity) => {
   const seed = await Seed.findOne({
     _id: seedId,
@@ -128,5 +152,6 @@ module.exports = {
   updateSeedById,
   deleteSeedById,
   attachSeedImage,
+  removeSeedImage,
   useSeeds
 };

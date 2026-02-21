@@ -7,7 +7,7 @@ const authorize = require("../middlewares/rbac.middleware");
 const validate = require("../middlewares/validate.middleware");
 const { upload } = require("../middlewares/upload.middleware");
 const { createPlantTypeSchema, updatePlantTypeSchema } = require("../validations/plantType.validation");
-const { objectIdSchema } = require("../validations/common.validation");
+const { objectIdSchema, objectIdWithImageIdSchema } = require("../validations/common.validation");
 
 // Create PlantType (ADMIN)
 router.post(
@@ -61,6 +61,14 @@ router.post(
   validate(objectIdSchema, "params"),
   upload.single("image"),
   plantTypeController.uploadPlantTypeImage
+);
+
+router.delete(
+  "/:id/image/:imageId",
+  authenticate,
+  authorize("ADMIN"),
+  validate(objectIdWithImageIdSchema, "params"),
+  plantTypeController.removePlantTypeImage
 );
 
 module.exports = router;

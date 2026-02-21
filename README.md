@@ -168,7 +168,9 @@ Validation is centralized through middleware (`stripUnknown: true`, `abortEarly:
 ## Image Upload and URL/Path Enrichment
 Image upload endpoints:
 - `POST /api/plant-types/:id/image`
+- `DELETE /api/plant-types/:id/image/:imageId`
 - `POST /api/seeds/:id/image`
+- `DELETE /api/seeds/:id/image/:imageId`
 
 Upload constraints:
 - Field name: `image`
@@ -232,6 +234,7 @@ Note: this enrichment runs on responses shaped as `{ ..., data: ... }`. Raw sale
 - `PATCH /api/plant-types/:id` (ADMIN)
 - `DELETE /api/plant-types/:id` (ADMIN)
 - `POST /api/plant-types/:id/image` (ADMIN, multipart)
+- `DELETE /api/plant-types/:id/image/:imageId` (ADMIN)
 
 ### Seeds
 - `POST /api/seeds` (STAFF)
@@ -240,6 +243,7 @@ Note: this enrichment runs on responses shaped as `{ ..., data: ... }`. Raw sale
 - `PATCH /api/seeds/:id` (STAFF)
 - `DELETE /api/seeds/:id` (STAFF, soft delete)
 - `POST /api/seeds/:id/image` (STAFF, multipart)
+- `DELETE /api/seeds/:id/image/:imageId` (STAFF)
 
 ### Sowing
 - `POST /api/sowing` (STAFF)

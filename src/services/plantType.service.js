@@ -2,6 +2,7 @@ const PlantType = require("../models/PlantType.model");
 const PlantInventory = require("../models/PlantInventory.model");
 const ApiError = require("../exceptions/ApiError");
 const statusCode = require("../enums/statusCode");
+const { removeUploadedFile } = require("../utils/uploadFile.util");
 
 const PLANT_TYPE_POPULATION = {
   path: "updatedBy",
@@ -77,6 +78,26 @@ const attachPlantTypeImage = async (plantTypeId, file) => {
   return PlantType.findById(plantType._id).populate(PLANT_TYPE_POPULATION);
 };
 
+const removePlantTypeImage = async (plantTypeId, imageId) => {
+  const plantType = await PlantType.findById(plantTypeId).populate(PLANT_TYPE_POPULATION);
+
+  if (!plantType) {
+    throw new ApiError(statusCode.NOT_FOUND, "PlantType not found");
+  }
+
+  const image = plantType.images.id(imageId);
+  if (!image) {
+    throw new ApiError(statusCode.NOT_FOUND, "Image not found");
+  }
+
+  const { fileName } = image;
+  image.deleteOne();
+  await plantType.save();
+  await removeUploadedFile(fileName);
+
+  return PlantType.findById(plantType._id).populate(PLANT_TYPE_POPULATION);
+};
+
 const deletePlantType = async (id) => {
   const inventoryInUse = await PlantInventory.exists({
     plantType: id,
@@ -103,6 +124,7 @@ module.exports = {
   getPlantTypes,
   updatePlantType,
   attachPlantTypeImage,
+  removePlantTypeImage,
   getPlantTypesById,
   deletePlantType
 };

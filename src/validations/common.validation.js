@@ -4,6 +4,12 @@ const objectIdSchema = Joi.object({
   id: Joi.string().hex().length(24).required()
 });
 
+const objectIdWithImageIdSchema = Joi.object({
+  id: Joi.string().hex().length(24).required(),
+  imageId: Joi.string().hex().length(24).required()
+});
+
 module.exports = {
-  objectIdSchema
+  objectIdSchema,
+  objectIdWithImageIdSchema
 };

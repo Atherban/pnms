@@ -84,6 +84,22 @@ const uploadPlantTypeImage = async (req, res, next) => {
   }
 };
 
+const removePlantTypeImage = async (req, res, next) => {
+  try {
+    const plantType = await plantTypeService.removePlantTypeImage(
+      req.params.id,
+      req.params.imageId
+    );
+
+    res.status(statusCode.OK).json({
+      message: "PlantType image removed successfully",
+      data: plantType
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 const deletePlantType = async (req, res, next) => {
   try {
     const plantType = await plantTypeService.deletePlantType(req.params.id);
@@ -102,5 +118,6 @@ module.exports = {
   getPlantTypesById,
   updatePlantType,
   uploadPlantTypeImage,
+  removePlantTypeImage,
   deletePlantType
 };

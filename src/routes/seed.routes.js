@@ -10,7 +10,7 @@ const {
   createSeedSchema,
   updateSeedSchema,
 } = require("../validations/seed.validation");
-const { objectIdSchema } = require("../validations/common.validation");
+const { objectIdSchema, objectIdWithImageIdSchema } = require("../validations/common.validation");
 const { upload } = require("../middlewares/upload.middleware");
 
 // Create seed batch (ADMIN)
@@ -66,6 +66,14 @@ router.post(
   validate(objectIdSchema, "params"),
   upload.single("image"),
   seedController.uploadSeedImage
+);
+
+router.delete(
+  "/:id/image/:imageId",
+  authenticate,
+  authorize("STAFF"),
+  validate(objectIdWithImageIdSchema, "params"),
+  seedController.removeSeedImage
 );
 
 module.exports = router;
