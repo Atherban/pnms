@@ -1,6 +1,7 @@
 const express = require("express");
 const helmet = require("helmet");
 const errorHandler = require("./middlewares/errorHandler.middleware");
+const responseImageMiddleware = require("./middlewares/responseImage.middleware");
 
 const seedRoutes = require("./routes/seed.routes");
 const sowingRoutes = require("./routes/sowing.routes");
@@ -20,6 +21,7 @@ const app = express();
 
 app.use(helmet());
 app.use(express.json());
+app.use(responseImageMiddleware);
 
 // health check
 app.get("/health", (req, res) => {

@@ -6,9 +6,9 @@ require("dotenv").config();
   await mongoose.connect(process.env.MONGODB_URI);
 
   const admin = new User({
-    name: "Admin User",
-    email: "admin@example.com",
-    password: "password123",
+    name: "Test User",
+    email: "test@example.com",
+    password: "test_pass",
     role: "ADMIN"
   });
 

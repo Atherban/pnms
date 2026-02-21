@@ -11,15 +11,15 @@ const GERMINATION_POPULATION = [
   {
     path: "sowingId",
     populate: [
-      { path: "seed", select: "name supplierName expiryDate" },
-      { path: "plantType", select: "name category variety sellingPrice" },
+      { path: "seed", select: "name supplierName expiryDate images" },
+      { path: "plantType", select: "name category variety sellingPrice images" },
       { path: "performedBy", select: "name email role" }
     ]
   },
   {
     path: "inventoryBatch",
     populate: [
-      { path: "plantType", select: "name category variety sellingPrice" },
+      { path: "plantType", select: "name category variety sellingPrice images" },
       { path: "sourceRef" }
     ]
   },

@@ -8,11 +8,11 @@ const { deductInventoryFIFO } = require("./inventory.service");
 const SALE_POPULATION = [
   {
     path: "items.inventory",
-    populate: { path: "plantType", select: "name category variety sellingPrice" }
+    populate: { path: "plantType", select: "name category variety sellingPrice images" }
   },
   {
     path: "items.batchDeductions.inventory",
-    populate: { path: "plantType", select: "name category variety sellingPrice" }
+    populate: { path: "plantType", select: "name category variety sellingPrice images" }
   },
   { path: "customer", select: "name mobileNumber" },
   { path: "performedBy", select: "name email role" }

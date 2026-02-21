@@ -7,7 +7,7 @@ const {
 } = require("../services/inventory.service");
 
 const INVENTORY_POPULATION = [
-  { path: "plantType", select: "name category variety sellingPrice" },
+  { path: "plantType", select: "name category variety sellingPrice images" },
   {
     path: "sourceRef",
     strictPopulate: false,
@@ -16,8 +16,8 @@ const INVENTORY_POPULATION = [
         path: "sowingId",
         strictPopulate: false,
         populate: [
-          { path: "seed", select: "name supplierName expiryDate" },
-          { path: "plantType", select: "name category variety sellingPrice" }
+          { path: "seed", select: "name supplierName expiryDate images" },
+          { path: "plantType", select: "name category variety sellingPrice images" }
         ]
       },
       {

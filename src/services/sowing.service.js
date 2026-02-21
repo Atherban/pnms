@@ -5,8 +5,8 @@ const ApiError = require("../exceptions/ApiError");
 const statusCode = require("../enums/statusCode");
 
 const SOWING_POPULATION = [
-  { path: "seed", select: "name supplierName expiryDate totalPurchased seedsUsed" },
-  { path: "plantType", select: "name category variety sellingPrice" },
+  { path: "seed", select: "name supplierName expiryDate totalPurchased seedsUsed images" },
+  { path: "plantType", select: "name category variety sellingPrice images" },
   { path: "performedBy", select: "name email role" }
 ];
 

@@ -3,7 +3,7 @@ const PlantType = require("../models/PlantType.model");
 const ApiError = require("../exceptions/ApiError");
 
 const SEED_POPULATION = [
-  { path: "plantType", select: "name category variety sellingPrice" },
+  { path: "plantType", select: "name category variety sellingPrice images" },
   { path: "createdBy", select: "name email role" },
   { path: "updatedBy", select: "name email role" }
 ];
