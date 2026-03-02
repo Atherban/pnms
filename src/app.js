@@ -15,6 +15,14 @@ const inventoryRoutes = require("./routes/inventory.routes");
 const customerRoutes = require("./routes/customer.routes");
 const expenseRoutes = require("./routes/expense.routes");
 const labourRoutes = require("./routes/labour.routes");
+const paymentRoutes = require("./routes/payment.routes");
+const nurseryRoutes = require("./routes/nursery.routes");
+const bannerRoutes = require("./routes/banner.routes");
+const reportRoutes = require("./routes/report.routes");
+const staffAccountRoutes = require("./routes/staffAccount.routes");
+const notificationRoutes = require("./routes/notification.routes");
+const auditLogRoutes = require("./routes/auditLog.routes");
+const maintenanceRoutes = require("./routes/maintenance.routes");
 
 
 const app = express();
@@ -42,6 +50,14 @@ app.use("/api/inventory", inventoryRoutes);
 app.use("/api/customers", customerRoutes);
 app.use("/api/expenses", expenseRoutes);
 app.use("/api/labours", labourRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/nurseries", nurseryRoutes);
+app.use("/api/banners", bannerRoutes);
+app.use("/api/reports", reportRoutes);
+app.use("/api/staff-accounts", staffAccountRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/audit-logs", auditLogRoutes);
+app.use("/api/maintenance", maintenanceRoutes);
 
 
 // serve uploaded files
