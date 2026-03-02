@@ -6,20 +6,24 @@ const statusCode = require("../enums/statusCode");
 const {
   createInventoryFromGermination
 } = require("./inventory.service");
+const { createCustomerNotification } = require("./notification.service");
+const Customer = require("../models/Customer.model");
+const { normalizeGerminationCustomer } = require("../utils/customerIdentity.util");
 
 const GERMINATION_POPULATION = [
   {
     path: "sowingId",
     populate: [
       { path: "seed", select: "name supplierName expiryDate images" },
-      { path: "plantType", select: "name category variety sellingPrice images" },
+      { path: "plantType", select: "name category variety sellingPrice images expectedSeedQtyPerBatch" },
+      { path: "customerId", select: "mobileNumber" },
       { path: "performedBy", select: "name email role" }
     ]
   },
   {
     path: "inventoryBatch",
     populate: [
-      { path: "plantType", select: "name category variety sellingPrice images" },
+      { path: "plantType", select: "name category variety sellingPrice images expectedSeedQtyPerBatch" },
       { path: "sourceRef" }
     ]
   },
@@ -37,6 +41,10 @@ const recordGermination = async (data, user) => {
       throw new ApiError(statusCode.NOT_FOUND, "Sowing record not found");
     }
 
+    if (user.role !== "SUPER_ADMIN" && user.nurseryId && String(sowing.nurseryId) !== String(user.nurseryId)) {
+      throw new ApiError(statusCode.FORBIDDEN, "Cannot record germination for another nursery");
+    }
+
     const availableForGermination =
       sowing.quantitySown - (sowing.quantityGerminated || 0);
     if (data.germinatedSeeds > availableForGermination) {
@@ -50,6 +58,7 @@ const recordGermination = async (data, user) => {
     const [germination] = await Germination.create(
       [
         {
+          nurseryId: user.nurseryId || sowing.nurseryId || null,
           sowingId: sowing._id,
           germinatedSeeds: data.germinatedSeeds,
           discardedSeeds: data.discardedSeeds || 0,
@@ -71,16 +80,41 @@ const recordGermination = async (data, user) => {
         receivedAt: data.germinationDate || new Date()
       },
       germination._id,
-      session
+      session,
+      user.userId,
+      user.nurseryId || sowing.nurseryId || null
     );
 
     germination.inventoryBatch = inventory._id;
     await germination.save({ session });
 
+    if (sowing.customerId) {
+      await createCustomerNotification({
+        nurseryId: user.nurseryId || sowing.nurseryId || null,
+        customerId: sowing.customerId,
+        type: "GERMINATION_UPDATED",
+        title: "Germination complete",
+        message: `${data.germinatedSeeds} seeds germinated, ${data.discardedSeeds || 0} discarded.`,
+        meta: { germinationId: germination._id, sowingId: sowing._id },
+        session
+      });
+
+      await createCustomerNotification({
+        nurseryId: user.nurseryId || sowing.nurseryId || null,
+        customerId: sowing.customerId,
+        type: "PRODUCT_READY",
+        title: "Plant ready",
+        message: "Your plants are now ready and available in inventory.",
+        meta: { inventoryBatchId: inventory._id },
+        session
+      });
+    }
+
     await session.commitTransaction();
     session.endSession();
 
-    return Germination.findById(germination._id).populate(GERMINATION_POPULATION);
+    const createdGermination = await Germination.findById(germination._id).populate(GERMINATION_POPULATION);
+    return normalizeGerminationCustomer(createdGermination);
   } catch (err) {
     await session.abortTransaction();
     session.endSession();
@@ -88,10 +122,23 @@ const recordGermination = async (data, user) => {
   }
 };
 
-const getGerminations = async () => {
-  return Germination.find()
+const getGerminations = async (user) => {
+  const query = {};
+  if (user.role !== "SUPER_ADMIN" && user.nurseryId) {
+    query.nurseryId = user.nurseryId;
+  }
+
+  if (user.role === "CUSTOMER") {
+    const customer = await Customer.findOne({ userId: user.userId, deletedAt: { $exists: false } });
+    if (!customer) return [];
+    const sowings = await SowingBatch.find({ customerId: customer._id }).select("_id");
+    query.sowingId = { $in: sowings.map((s) => s._id) };
+  }
+
+  const germinations = await Germination.find(query)
     .sort({ createdAt: -1 })
     .populate(GERMINATION_POPULATION);
+  return germinations.map(normalizeGerminationCustomer);
 };
 
 module.exports = {

@@ -14,8 +14,20 @@ const createSaleSchema = Joi.object({
     .required(),
 
   paymentMode: Joi.string()
-    .valid("CASH", "UPI", "ONLINE")
-    .required()
+    .valid("CASH", "UPI", "ONLINE", "BANK_TRANSFER")
+    .required(),
+
+  amountPaid: Joi.number().min(0).precision(2).optional(),
+  discountAmount: Joi.number().min(0).precision(2).optional(),
+  utrNumber: Joi.string().trim().max(120).allow("", null).optional(),
+  transactionRef: Joi.string().trim().max(120).optional(),
+  paymentProofFileName: Joi.string().trim().optional()
+}).custom((value, helpers) => {
+  const amountPaid = Number(value.amountPaid || 0);
+  if (amountPaid > 0 && value.paymentMode !== "CASH" && !value.utrNumber) {
+    return helpers.message("utrNumber is required for non-cash payments when amountPaid is greater than 0");
+  }
+  return value;
 });
 
 module.exports = {

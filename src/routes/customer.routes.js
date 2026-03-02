@@ -14,7 +14,7 @@ const {
 router.post(
   "/",
   authenticate,
-  authorize("STAFF"),
+  authorize("STAFF", "NURSERY_ADMIN", "SUPER_ADMIN"),
   validate(createCustomerSchema),
   customerController.createCustomer
 );
@@ -22,22 +22,37 @@ router.post(
 router.get(
   "/",
   authenticate,
-  authorize("ADMIN", "STAFF", "VIEWER"),
+  authorize("NURSERY_ADMIN", "STAFF", "CUSTOMER", "SUPER_ADMIN"),
   customerController.getCustomers
+);
+
+router.get(
+  "/me/profile",
+  authenticate,
+  authorize("CUSTOMER"),
+  customerController.getMyProfile
 );
 
 router.get(
   "/:id",
   authenticate,
-  authorize("ADMIN", "STAFF", "VIEWER"),
+  authorize("NURSERY_ADMIN", "STAFF", "CUSTOMER", "SUPER_ADMIN"),
   validate(objectIdSchema, "params"),
   customerController.getCustomerById
 );
 
 router.patch(
+  "/me/profile",
+  authenticate,
+  authorize("CUSTOMER"),
+  validate(updateCustomerSchema),
+  customerController.updateMyProfile
+);
+
+router.patch(
   "/:id",
   authenticate,
-  authorize("STAFF"),
+  authorize("STAFF", "NURSERY_ADMIN", "SUPER_ADMIN", "CUSTOMER"),
   validate(objectIdSchema, "params"),
   validate(updateCustomerSchema),
   customerController.updateCustomer
@@ -46,7 +61,7 @@ router.patch(
 router.delete(
   "/:id",
   authenticate,
-  authorize("STAFF"),
+  authorize("STAFF", "NURSERY_ADMIN", "SUPER_ADMIN"),
   validate(objectIdSchema, "params"),
   customerController.deleteCustomer
 );

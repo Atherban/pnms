@@ -16,6 +16,8 @@ const createExpenseSchema = Joi.object({
     .required(),
 
   description: Joi.string().optional(),
+  purpose: Joi.string().optional(),
+  productDetails: Joi.string().optional(),
 
   amount: Joi.number().min(0).required(),
 
@@ -35,6 +37,8 @@ const updateExpenseSchema = Joi.object({
     "OTHER"
   ),
   description: Joi.string().allow("", null),
+  purpose: Joi.string().allow("", null),
+  productDetails: Joi.string().allow("", null),
   amount: Joi.number().min(0),
   date: Joi.date()
 }).min(1);

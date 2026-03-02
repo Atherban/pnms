@@ -17,7 +17,7 @@ const { upload } = require("../middlewares/upload.middleware");
 router.post(
   "/",
   authenticate,
-  authorize("STAFF"),
+  authorize("STAFF", "NURSERY_ADMIN", "SUPER_ADMIN"),
   validate(createSeedSchema),
   seedController.createSeed
 );
@@ -26,7 +26,7 @@ router.post(
 router.get(
   "/",
   authenticate,
-  authorize("ADMIN", "STAFF", "VIEWER"),
+  authorize("SUPER_ADMIN", "NURSERY_ADMIN", "STAFF"),
   seedController.getSeeds
 );
 
@@ -34,7 +34,7 @@ router.get(
 router.get(
   "/:id",
   authenticate,
-  authorize("ADMIN", "STAFF", "VIEWER"),
+  authorize("SUPER_ADMIN", "NURSERY_ADMIN", "STAFF"),
   validate(objectIdSchema, "params"),
   seedController.getSeedById
 );
@@ -43,7 +43,7 @@ router.get(
 router.patch(
   "/:id",
   authenticate,
-  authorize("STAFF"),
+  authorize("STAFF", "NURSERY_ADMIN", "SUPER_ADMIN"),
   validate(objectIdSchema, "params"),
   validate(updateSeedSchema),
   seedController.updateSeedById
@@ -53,7 +53,7 @@ router.patch(
 router.delete(
   "/:id",
   authenticate,
-  authorize("STAFF"),
+  authorize("STAFF", "NURSERY_ADMIN", "SUPER_ADMIN"),
   validate(objectIdSchema, "params"),
   seedController.deleteSeedById
 );
@@ -62,7 +62,7 @@ router.delete(
 router.post(
   "/:id/image",
   authenticate,
-  authorize("STAFF"),
+  authorize("STAFF", "NURSERY_ADMIN", "SUPER_ADMIN"),
   validate(objectIdSchema, "params"),
   upload.single("image"),
   seedController.uploadSeedImage
@@ -71,7 +71,7 @@ router.post(
 router.delete(
   "/:id/image/:imageId",
   authenticate,
-  authorize("STAFF"),
+  authorize("STAFF", "NURSERY_ADMIN", "SUPER_ADMIN"),
   validate(objectIdWithImageIdSchema, "params"),
   seedController.removeSeedImage
 );

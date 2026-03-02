@@ -23,6 +23,8 @@ const createPlantTypeSchema = Joi.object({
   variety: Joi.string().trim().allow("", null),
   lifecycleDays: Joi.number().integer().positive().required(),
   sellingPrice: Joi.number().positive().precision(2).required(),
+  expectedSeedQtyPerBatch: Joi.number().integer().positive().required(),
+  expectedSeedUnit: Joi.string().valid("SEEDS", "GRAM", "KG", "UNITS").default("SEEDS"),
   minStockLevel: Joi.number().integer().min(0).default(0),
   defaultCostPrice: Joi.number().min(0).precision(2).default(0),
   growthStages: Joi.array().items(growthStageSchema).default([])
@@ -37,6 +39,8 @@ const updatePlantTypeSchema = Joi.object({
   variety: Joi.string().trim().allow("", null),
   lifecycleDays: Joi.number().integer().positive(),
   sellingPrice: Joi.number().positive().precision(2),
+  expectedSeedQtyPerBatch: Joi.number().integer().positive(),
+  expectedSeedUnit: Joi.string().valid("SEEDS", "GRAM", "KG", "UNITS"),
   minStockLevel: Joi.number().integer().min(0),
   defaultCostPrice: Joi.number().min(0).precision(2),
   growthStages: Joi.array().items(growthStageSchema)

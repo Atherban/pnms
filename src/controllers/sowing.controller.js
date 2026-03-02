@@ -21,7 +21,7 @@ const sowSeeds = async (req, res, next) => {
 // Get all sowing records
 const getSowings = async (req, res, next) => {
   try {
-    const sowings = await sowingService.getSowings();
+    const sowings = await sowingService.getSowings(req.user);
 
     res.status(statusCode.OK).json({
       message: "Sowing records retrieved successfully",

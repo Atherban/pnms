@@ -1,10 +1,11 @@
 const Joi = require("joi");
+const INDIAN_MOBILE_PATTERN = /^(?:\+91|91)?[6-9]\d{9}$/;
 
 const createCustomerSchema = Joi.object({
   name: Joi.string().required(),
 
   mobileNumber: Joi.string()
-    .pattern(/^[6-9]\d{9}$/)
+    .pattern(INDIAN_MOBILE_PATTERN)
     .required(),
 
   address: Joi.string().optional()
@@ -13,7 +14,7 @@ const createCustomerSchema = Joi.object({
 const updateCustomerSchema = Joi.object({
   name: Joi.string().optional(),
   mobileNumber: Joi.string()
-    .pattern(/^[6-9]\d{9}$/)
+    .pattern(INDIAN_MOBILE_PATTERN)
     .optional(),
   address: Joi.string().allow("", null).optional()
 }).min(1);

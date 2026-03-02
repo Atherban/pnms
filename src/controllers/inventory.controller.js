@@ -5,9 +5,15 @@ const statusCode = require("../enums/statusCode");
 const {
   createPurchasedInventory
 } = require("../services/inventory.service");
+const {
+  getCustomerPurchasedInventoryIds
+} = require("../services/accessScope.service");
 
 const INVENTORY_POPULATION = [
-  { path: "plantType", select: "name category variety sellingPrice images" },
+  {
+    path: "plantType",
+    select: "name category variety sellingPrice images expectedSeedQtyPerBatch expectedSeedUnit"
+  },
   {
     path: "sourceRef",
     strictPopulate: false,
@@ -17,7 +23,10 @@ const INVENTORY_POPULATION = [
         strictPopulate: false,
         populate: [
           { path: "seed", select: "name supplierName expiryDate images" },
-          { path: "plantType", select: "name category variety sellingPrice images" }
+          {
+            path: "plantType",
+            select: "name category variety sellingPrice images expectedSeedQtyPerBatch expectedSeedUnit"
+          }
         ]
       },
       {
@@ -56,7 +65,17 @@ const createInventory = async (req, res, next) => {
 
 const getInventory = async (req, res, next) => {
   try {
-    const inventory = await PlantInventory.find()
+    const query = {};
+    if (req.user.role !== "SUPER_ADMIN" && req.user.nurseryId) {
+      query.nurseryId = req.user.nurseryId;
+    }
+
+    if (req.user.role === "CUSTOMER") {
+      const inventoryIds = await getCustomerPurchasedInventoryIds(req.user);
+      query._id = { $in: inventoryIds };
+    }
+
+    const inventory = await PlantInventory.find(query)
       .populate(INVENTORY_POPULATION)
       .sort({ createdAt: -1 });
 
@@ -71,7 +90,19 @@ const getInventory = async (req, res, next) => {
 
 const getInventoryById = async (req, res, next) => {
   try {
-    const item = await PlantInventory.findById(req.params.id)
+    const query = { _id: req.params.id };
+    if (req.user.role !== "SUPER_ADMIN" && req.user.nurseryId) {
+      query.nurseryId = req.user.nurseryId;
+    }
+
+    if (req.user.role === "CUSTOMER") {
+      const inventoryIds = await getCustomerPurchasedInventoryIds(req.user);
+      if (!inventoryIds.some((id) => id.toString() === req.params.id)) {
+        throw new ApiError(statusCode.NOT_FOUND, "Inventory item not found");
+      }
+    }
+
+    const item = await PlantInventory.findOne(query)
       .populate(INVENTORY_POPULATION);
 
     if (!item) {

@@ -11,7 +11,7 @@ const { sowingSchema } = require("../validations/sowing.validation");
 router.post(
   "/",
   authenticate,
-  authorize("STAFF"),
+  authorize("STAFF", "NURSERY_ADMIN", "SUPER_ADMIN"),
   validate(sowingSchema),
   sowingController.sowSeeds
 );
@@ -20,7 +20,7 @@ router.post(
 router.get(
   "/",
   authenticate,
-  authorize("ADMIN", "STAFF", "VIEWER"),
+  authorize("SUPER_ADMIN", "NURSERY_ADMIN", "STAFF"),
   sowingController.getSowings
 );
 

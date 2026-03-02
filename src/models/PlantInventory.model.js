@@ -2,6 +2,11 @@ const mongoose = require("mongoose");
 
 const plantInventorySchema = new mongoose.Schema(
   {
+    nurseryId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Nursery"
+    },
+
     plantType: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "PlantType",
@@ -36,6 +41,12 @@ const plantInventorySchema = new mongoose.Schema(
       type: Number,
       required: true,
       min: 0
+    },
+
+    quantityUnit: {
+      type: String,
+      enum: ["SEEDS", "GRAM", "KG", "UNITS"],
+      default: "UNITS"
     },
 
     initialQuantity: {

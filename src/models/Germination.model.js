@@ -2,6 +2,11 @@ const mongoose = require("mongoose");
 
 const germinationSchema = new mongoose.Schema(
   {
+    nurseryId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Nursery"
+    },
+
     sowingId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "SowingBatch",
@@ -32,7 +37,7 @@ const germinationSchema = new mongoose.Schema(
     },
     roleAtTime: {
       type: String,
-      enum: ["ADMIN", "STAFF"],
+      enum: ["SUPER_ADMIN", "NURSERY_ADMIN", "STAFF"],
       required: true
     }
   },

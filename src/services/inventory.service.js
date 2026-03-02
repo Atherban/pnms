@@ -1,8 +1,26 @@
 const Expense = require("../models/Expense.model");
 const PlantInventory = require("../models/PlantInventory.model");
 const PlantType = require("../models/PlantType.model");
+const InventoryTransaction = require("../models/InventoryTransaction.model");
 const ApiError = require("../exceptions/ApiError");
 const statusCode = require("../enums/statusCode");
+
+const QUANTITY_UNITS = ["SEEDS", "GRAM", "KG", "UNITS"];
+
+const normalizeQuantityUnit = (value, fallback = "UNITS") => {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+
+  const normalized = value.trim().toUpperCase();
+  return QUANTITY_UNITS.includes(normalized) ? normalized : fallback;
+};
+
+const resolveInventoryQuantityUnit = (requestedQuantityUnit, plantType) =>
+  normalizeQuantityUnit(
+    requestedQuantityUnit,
+    normalizeQuantityUnit(plantType?.expectedSeedUnit, "UNITS")
+  );
 
 const resolveInventoryUnitCost = (requestedUnitCost, plantType) => {
   if (requestedUnitCost !== undefined && requestedUnitCost !== null && requestedUnitCost > 0) {
@@ -26,7 +44,9 @@ const resolveInventoryUnitCost = (requestedUnitCost, plantType) => {
 const createInventoryFromGermination = async (
   { plantType, quantity, receivedAt, unitCost },
   sourceRef,
-  session
+  session,
+  performedBy,
+  nurseryId
 ) => {
   const plantTypeDoc = await PlantType.findById(plantType).session(session);
   if (!plantTypeDoc) {
@@ -34,15 +54,18 @@ const createInventoryFromGermination = async (
   }
 
   const resolvedUnitCost = resolveInventoryUnitCost(unitCost, plantTypeDoc);
+  const resolvedQuantityUnit = resolveInventoryQuantityUnit(undefined, plantTypeDoc);
 
   const [inventory] = await PlantInventory.create(
     [
       {
+        nurseryId: nurseryId || null,
         plantType,
         sourceType: "GERMINATION",
         sourceModel: "Germination",
         sourceRef,
         quantity,
+        quantityUnit: resolvedQuantityUnit,
         initialQuantity: quantity,
         unitCost: resolvedUnitCost,
         growthStage: "READY_FOR_SALE",
@@ -52,26 +75,54 @@ const createInventoryFromGermination = async (
     { session }
   );
 
+  await InventoryTransaction.create(
+    [
+      {
+        nurseryId: nurseryId || null,
+        inventoryId: inventory._id,
+        type: "INBOUND_GERMINATION",
+        quantity,
+        quantityUnitSnapshot: resolvedQuantityUnit,
+        unitCostSnapshot: resolvedUnitCost,
+        reason: "Inventory created from germination",
+        performedBy,
+        referenceType: "Germination",
+        referenceId: sourceRef
+      }
+    ],
+    { session }
+  );
+
   return inventory;
 };
 
 const createPurchasedInventory = async (payload, user, session) => {
-  const plantType = await PlantType.findById(payload.plantType).session(session);
+  if (user.role !== "SUPER_ADMIN" && !user.nurseryId) {
+    throw new ApiError(statusCode.BAD_REQUEST, "User is not assigned to a nursery");
+  }
+
+  const plantType = await PlantType.findOne({
+    _id: payload.plantType,
+    ...(user?.role !== "SUPER_ADMIN" && user?.nurseryId ? { nurseryId: user.nurseryId } : {})
+  }).session(session);
   if (!plantType) {
     throw new ApiError(statusCode.BAD_REQUEST, "Invalid plant type");
   }
 
   const resolvedUnitCost = resolveInventoryUnitCost(payload.unitCost, plantType);
+  const resolvedQuantityUnit = resolveInventoryQuantityUnit(payload.quantityUnit, plantType);
 
   const [expense] = await Expense.create(
     [
       {
+        nurseryId: user?.nurseryId || null,
         type: "OTHER",
         description:
           payload.note ||
           `Purchased ready plants${payload.supplierName ? ` from ${payload.supplierName}` : ""}`,
         amount: payload.quantity * resolvedUnitCost,
-        date: payload.purchaseDate || new Date()
+        date: payload.purchaseDate || new Date(),
+        purchasedBy: user?.userId
       }
     ],
     { session }
@@ -80,11 +131,13 @@ const createPurchasedInventory = async (payload, user, session) => {
   const [inventory] = await PlantInventory.create(
     [
       {
+        nurseryId: user?.nurseryId || null,
         plantType: payload.plantType,
         sourceType: "PURCHASED",
         sourceModel: "Expense",
         sourceRef: expense._id,
         quantity: payload.quantity,
+        quantityUnit: resolvedQuantityUnit,
         initialQuantity: payload.quantity,
         unitCost: resolvedUnitCost,
         growthStage: "READY_FOR_SALE",
@@ -94,12 +147,31 @@ const createPurchasedInventory = async (payload, user, session) => {
     { session }
   );
 
+  await InventoryTransaction.create(
+    [
+      {
+        nurseryId: user?.nurseryId || null,
+        inventoryId: inventory._id,
+        type: "INBOUND_PURCHASE",
+        quantity: payload.quantity,
+        quantityUnitSnapshot: resolvedQuantityUnit,
+        unitCostSnapshot: resolvedUnitCost,
+        reason: payload.note || "Purchased inventory",
+        performedBy: user?.userId,
+        referenceType: "Expense",
+        referenceId: expense._id
+      }
+    ],
+    { session }
+  );
+
   return { inventory, expense };
 };
 
-const deductInventoryFIFO = async ({ plantTypeId, quantity }, session) => {
+const deductInventoryFIFO = async ({ plantTypeId, quantity, nurseryId }, session) => {
   const batches = await PlantInventory.find({
     plantType: plantTypeId,
+    ...(nurseryId ? { nurseryId } : {}),
     status: "AVAILABLE",
     quantity: { $gt: 0 }
   })

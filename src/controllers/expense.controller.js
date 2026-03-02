@@ -3,7 +3,7 @@ const expenseService = require("../services/expense.service");
 
 const createExpense = async (req, res, next) => {
   try {
-    const expense = await expenseService.createExpense(req.body);
+    const expense = await expenseService.createExpense(req.body, req.user);
     res.status(statusCode.CREATED).json({
       message: "Expense created successfully",
       data: expense
@@ -15,7 +15,7 @@ const createExpense = async (req, res, next) => {
 
 const getExpenses = async (req, res, next) => {
   try {
-    const expenses = await expenseService.getExpenses();
+    const expenses = await expenseService.getExpenses(req.user, req.query);
     res.status(statusCode.OK).json({
       message: "Expenses retrieved successfully",
       data: expenses
@@ -27,7 +27,7 @@ const getExpenses = async (req, res, next) => {
 
 const getExpenseById = async (req, res, next) => {
   try {
-    const expense = await expenseService.getExpenseById(req.params.id);
+    const expense = await expenseService.getExpenseById(req.params.id, req.user);
     res.status(statusCode.OK).json({
       message: "Expense retrieved successfully",
       data: expense
@@ -39,7 +39,7 @@ const getExpenseById = async (req, res, next) => {
 
 const updateExpense = async (req, res, next) => {
   try {
-    const expense = await expenseService.updateExpense(req.params.id, req.body);
+    const expense = await expenseService.updateExpense(req.params.id, req.body, req.user);
     res.status(statusCode.OK).json({
       message: "Expense updated successfully",
       data: expense
@@ -51,7 +51,7 @@ const updateExpense = async (req, res, next) => {
 
 const deleteExpense = async (req, res, next) => {
   try {
-    const expense = await expenseService.deleteExpense(req.params.id);
+    const expense = await expenseService.deleteExpense(req.params.id, req.user);
     res.status(statusCode.OK).json({
       message: "Expense deleted successfully",
       data: expense

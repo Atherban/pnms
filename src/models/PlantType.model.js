@@ -2,10 +2,14 @@ const mongoose = require("mongoose");
 
 const plantTypeSchema = new mongoose.Schema(
   {
+    nurseryId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Nursery"
+    },
+
     name: {
       type: String,
       required: true,
-      unique: true,
       trim: true
     },
 
@@ -51,6 +55,18 @@ const plantTypeSchema = new mongoose.Schema(
       min: 0
     },
 
+    expectedSeedQtyPerBatch: {
+      type: Number,
+      min: 1,
+      default: 1
+    },
+
+    expectedSeedUnit: {
+      type: String,
+      enum: ["SEEDS", "GRAM", "KG", "UNITS"],
+      default: "SEEDS"
+    },
+
     minStockLevel: {
       type: Number,
       min: 0,
@@ -64,6 +80,20 @@ const plantTypeSchema = new mongoose.Schema(
     },
 
     updatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User"
+    },
+
+    active: {
+      type: Boolean,
+      default: true
+    },
+
+    deletedAt: {
+      type: Date
+    },
+
+    deletedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User"
     },
@@ -82,6 +112,11 @@ const plantTypeSchema = new mongoose.Schema(
     ]
   },
   { timestamps: true }
+);
+
+plantTypeSchema.index(
+  { nurseryId: 1, name: 1 },
+  { unique: true, partialFilterExpression: { deletedAt: { $exists: false } } }
 );
 
 plantTypeSchema.pre("validate", function () {

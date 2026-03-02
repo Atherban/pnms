@@ -14,7 +14,7 @@ const {
 router.post(
   "/",
   authenticate,
-  authorize("STAFF"),
+  authorize("STAFF", "NURSERY_ADMIN", "SUPER_ADMIN"),
   validate(createExpenseSchema),
   expenseController.createExpense
 );
@@ -22,14 +22,14 @@ router.post(
 router.get(
   "/",
   authenticate,
-  authorize("ADMIN", "STAFF", "VIEWER"),
+  authorize("SUPER_ADMIN", "NURSERY_ADMIN", "STAFF"),
   expenseController.getExpenses
 );
 
 router.get(
   "/:id",
   authenticate,
-  authorize("ADMIN", "STAFF", "VIEWER"),
+  authorize("SUPER_ADMIN", "NURSERY_ADMIN", "STAFF"),
   validate(objectIdSchema, "params"),
   expenseController.getExpenseById
 );
@@ -37,7 +37,7 @@ router.get(
 router.patch(
   "/:id",
   authenticate,
-  authorize("STAFF"),
+  authorize("STAFF", "NURSERY_ADMIN", "SUPER_ADMIN"),
   validate(objectIdSchema, "params"),
   validate(updateExpenseSchema),
   expenseController.updateExpense
@@ -46,7 +46,7 @@ router.patch(
 router.delete(
   "/:id",
   authenticate,
-  authorize("STAFF"),
+  authorize("NURSERY_ADMIN", "SUPER_ADMIN"),
   validate(objectIdSchema, "params"),
   expenseController.deleteExpense
 );

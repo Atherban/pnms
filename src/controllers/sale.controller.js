@@ -16,7 +16,7 @@ const createSale = async (req, res, next) => {
 
 const getAllSales = async (req, res, next) => {
   try {
-    const sales = await saleService.getAllSales();
+    const sales = await saleService.getAllSales(req.user);
     res.status(statusCode.OK).json(sales);
   } catch (err) {
     next(err);
@@ -25,7 +25,7 @@ const getAllSales = async (req, res, next) => {
 
 const getSaleById = async (req, res, next) => {
   try {
-    const sale = await saleService.getSaleById(req.params.id);
+    const sale = await saleService.getSaleById(req.params.id, req.user);
     res.status(statusCode.OK).json(sale);
   } catch (err) {
     next(err);

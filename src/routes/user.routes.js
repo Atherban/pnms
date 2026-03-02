@@ -8,14 +8,16 @@ const validate = require("../middlewares/validate.middleware");
 const { objectIdSchema } = require("../validations/common.validation");
 const {
   createUserSchema,
-  updateUserSchema
+  updateUserSchema,
+  resetUserPasswordSchema,
+  registerDeviceTokenSchema
 } = require("../validations/user.validation");
 
 // Create user
 router.post(
   "/",
   authenticate,
-  authorize("ADMIN"),
+  authorize("SUPER_ADMIN", "NURSERY_ADMIN"),
   validate(createUserSchema),
   userController.createUser
 );
@@ -24,15 +26,32 @@ router.post(
 router.get(
   "/",
   authenticate,
-  authorize("ADMIN"),
+  authorize("SUPER_ADMIN", "NURSERY_ADMIN"),
   userController.getUsers
+);
+
+// Push token registration (before /:id routes to prevent param conflicts)
+router.post(
+  "/device-token",
+  authenticate,
+  authorize("SUPER_ADMIN", "NURSERY_ADMIN", "STAFF", "CUSTOMER"),
+  validate(registerDeviceTokenSchema),
+  userController.registerDeviceToken
+);
+
+router.post(
+  "/push-token",
+  authenticate,
+  authorize("SUPER_ADMIN", "NURSERY_ADMIN", "STAFF", "CUSTOMER"),
+  validate(registerDeviceTokenSchema),
+  userController.registerDeviceToken
 );
 
 // Get user by ID
 router.get(
   "/:id",
   authenticate,
-  authorize("ADMIN"),
+  authorize("SUPER_ADMIN", "NURSERY_ADMIN"),
   validate(objectIdSchema, "params"),
   userController.getUserById
 );
@@ -41,7 +60,7 @@ router.get(
 router.patch(
   "/:id",
   authenticate,
-  authorize("ADMIN"),
+  authorize("SUPER_ADMIN", "NURSERY_ADMIN"),
   validate(objectIdSchema, "params"),
   validate(updateUserSchema),
   userController.updateUser
@@ -51,9 +70,18 @@ router.patch(
 router.delete(
   "/:id",
   authenticate,
-  authorize("ADMIN"),
+  authorize("SUPER_ADMIN", "NURSERY_ADMIN"),
   validate(objectIdSchema, "params"),
   userController.disableUser
+);
+
+router.post(
+  "/:id/reset-password",
+  authenticate,
+  authorize("SUPER_ADMIN", "NURSERY_ADMIN"),
+  validate(objectIdSchema, "params"),
+  validate(resetUserPasswordSchema),
+  userController.resetUserPassword
 );
 
 module.exports = router;

@@ -2,6 +2,11 @@ const mongoose = require("mongoose");
 
 const labourSchema = new mongoose.Schema(
   {
+    nurseryId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Nursery"
+    },
+
     name: {
       type: String,
       required: true
@@ -45,5 +50,6 @@ const labourSchema = new mongoose.Schema(
 );
 
 labourSchema.index({ date: 1 });
+labourSchema.index({ nurseryId: 1, date: -1 });
 
 module.exports = mongoose.model("Labour", labourSchema);

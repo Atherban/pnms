@@ -20,7 +20,7 @@ const recordGermination = async (req, res, next) => {
 // Get all germination records
 const getGerminations = async (req, res, next) => {
   try {
-    const records = await germinationService.getGerminations();
+    const records = await germinationService.getGerminations(req.user);
     res.status(statusCode.OK).json({
       message: "Germination records retrieved successfully",
       data: records,

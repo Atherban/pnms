@@ -11,7 +11,7 @@ const { profitQuerySchema } = require("../validations/profit.validation");
 router.get(
   "/",
   authenticate,
-  authorize("ADMIN"),
+  authorize("SUPER_ADMIN", "NURSERY_ADMIN"),
   validate(profitQuerySchema, "query"),
   profitController.getProfit
 );

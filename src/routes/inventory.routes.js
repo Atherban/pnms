@@ -13,7 +13,7 @@ const {
 router.post(
   "/",
   authenticate,
-  authorize("STAFF"),
+  authorize("STAFF", "NURSERY_ADMIN", "SUPER_ADMIN"),
   validate(createPurchasedInventorySchema),
   inventoryController.createInventory
 );
@@ -21,14 +21,14 @@ router.post(
 router.get(
   "/",
   authenticate,
-  authorize("ADMIN", "STAFF", "VIEWER"),
+  authorize("SUPER_ADMIN", "NURSERY_ADMIN", "STAFF", "CUSTOMER"),
   inventoryController.getInventory
 );
 
 router.get(
   "/:id",
   authenticate,
-  authorize("ADMIN", "STAFF", "VIEWER"),
+  authorize("SUPER_ADMIN", "NURSERY_ADMIN", "STAFF", "CUSTOMER"),
   validate(objectIdSchema, "params"),
   inventoryController.getInventoryById
 );

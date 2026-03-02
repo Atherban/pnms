@@ -13,7 +13,7 @@ const { objectIdSchema, objectIdWithImageIdSchema } = require("../validations/co
 router.post(
   "/",
   authenticate,
-  authorize("ADMIN"),
+  authorize("SUPER_ADMIN", "NURSERY_ADMIN"),
   validate(createPlantTypeSchema),
   plantTypeController.createPlantType
 );
@@ -22,7 +22,7 @@ router.post(
 router.get(
   "/",
   authenticate,
-  authorize("ADMIN", "STAFF", "VIEWER"),
+  authorize("SUPER_ADMIN", "NURSERY_ADMIN", "STAFF", "CUSTOMER"),
   plantTypeController.getPlantTypes
 );
 
@@ -30,7 +30,7 @@ router.get(
 router.get(
   "/:id",
   authenticate,
-  authorize("ADMIN", "STAFF", "VIEWER"),
+  authorize("SUPER_ADMIN", "NURSERY_ADMIN", "STAFF", "CUSTOMER"),
   validate(objectIdSchema, "params"),
   plantTypeController.getPlantTypesById
 );
@@ -39,7 +39,7 @@ router.get(
 router.patch(
   "/:id",
   authenticate,
-  authorize("ADMIN"),
+  authorize("SUPER_ADMIN", "NURSERY_ADMIN"),
   validate(objectIdSchema, "params"),
   validate(updatePlantTypeSchema),
   plantTypeController.updatePlantType
@@ -48,7 +48,7 @@ router.patch(
 router.delete(
   "/:id",
   authenticate,
-  authorize("ADMIN"),
+  authorize("SUPER_ADMIN", "NURSERY_ADMIN"),
   validate(objectIdSchema, "params"),
   plantTypeController.deletePlantType
 );
@@ -57,7 +57,7 @@ router.delete(
 router.post(
   "/:id/image",
   authenticate,
-  authorize("ADMIN"),
+  authorize("SUPER_ADMIN", "NURSERY_ADMIN"),
   validate(objectIdSchema, "params"),
   upload.single("image"),
   plantTypeController.uploadPlantTypeImage
@@ -66,7 +66,7 @@ router.post(
 router.delete(
   "/:id/image/:imageId",
   authenticate,
-  authorize("ADMIN"),
+  authorize("SUPER_ADMIN", "NURSERY_ADMIN"),
   validate(objectIdWithImageIdSchema, "params"),
   plantTypeController.removePlantTypeImage
 );

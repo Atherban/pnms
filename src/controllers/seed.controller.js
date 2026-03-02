@@ -16,7 +16,7 @@ const createSeed = async (req, res, next) => {
 
 const getSeeds = async (req, res, next) => {
   try {
-    const seeds = await seedService.getAllSeeds();
+    const seeds = await seedService.getAllSeeds(req.user);
     res.status(statusCode.OK).json({
       message: "Seeds retrieved successfully",
       data: seeds
@@ -28,7 +28,7 @@ const getSeeds = async (req, res, next) => {
 
 const getSeedById = async (req, res, next) => {
   try {
-    const seed = await seedService.getSeedById(req.params.id);
+    const seed = await seedService.getSeedById(req.params.id, req.user);
     res.status(statusCode.OK).json({
       message: "Seed retrieved successfully",
       data: seed
@@ -56,7 +56,7 @@ const updateSeedById = async (req, res, next) => {
 
 const deleteSeedById = async (req, res, next) => {
   try {
-    const seed = await seedService.deleteSeedById(req.params.id);
+    const seed = await seedService.deleteSeedById(req.params.id, req.user);
     res.status(statusCode.OK).json({
       message: "Seed deleted successfully",
       data: seed
@@ -74,7 +74,8 @@ const uploadSeedImage = async (req, res, next) => {
 
     const seed = await seedService.attachSeedImage(
       req.params.id,
-      req.file
+      req.file,
+      req.user
     );
 
     res.status(statusCode.OK).json({
@@ -90,7 +91,8 @@ const removeSeedImage = async (req, res, next) => {
   try {
     const seed = await seedService.removeSeedImage(
       req.params.id,
-      req.params.imageId
+      req.params.imageId,
+      req.user
     );
 
     res.status(statusCode.OK).json({

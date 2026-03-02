@@ -1,5 +1,6 @@
 const ApiError = require("../exceptions/ApiError");
 const statusCode = require("../enums/statusCode");
+const { removeUploadedFile } = require("../utils/uploadFile.util");
 
 const validate = (schema, property = "body") => {
   return async (req, res, next) => {
@@ -15,6 +16,9 @@ const validate = (schema, property = "body") => {
     } catch (err) {
       // Joi validation error
       if (err.isJoi) {
+        if (req.file?.filename) {
+          await removeUploadedFile(req.file.filename);
+        }
         return next(
           new ApiError(
             statusCode.BAD_REQUEST,

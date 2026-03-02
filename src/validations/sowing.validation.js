@@ -6,6 +6,11 @@ const sowingSchema = Joi.object({
     .length(24)
     .required(),
 
+  customerId: Joi.string()
+    .hex()
+    .length(24)
+    .optional(),
+
   quantity: Joi.number()
     .integer()
     .min(1)

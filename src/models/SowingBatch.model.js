@@ -2,6 +2,11 @@ const mongoose = require("mongoose");
 
 const sowingBatchSchema = new mongoose.Schema(
   {
+    nurseryId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Nursery"
+    },
+
     seed: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Seed",
@@ -12,6 +17,11 @@ const sowingBatchSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "PlantType",
       required: true
+    },
+
+    customerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Customer"
     },
 
     quantitySown: {

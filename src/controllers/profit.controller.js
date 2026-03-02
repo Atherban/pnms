@@ -3,11 +3,13 @@ const statusCode = require("../enums/statusCode");
 
 const getProfit = async (req, res, next) => {
   try {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, nurseryId } = req.query;
 
     const report = await profitService.calculateProfit(
       startDate,
-      endDate
+      endDate,
+      req.user,
+      nurseryId
     );
 
     res.status(statusCode.OK).json({

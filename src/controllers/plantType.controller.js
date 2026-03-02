@@ -4,7 +4,7 @@ const ApiError = require("../exceptions/ApiError");
 
 const createPlantType = async (req, res, next) => {
   try {
-    const plantType = await plantTypeService.createPlantType(req.body);
+    const plantType = await plantTypeService.createPlantType(req.body, req.user);
 
     res.status(statusCode.CREATED).json({
       message: "PlantType created successfully",
@@ -17,7 +17,7 @@ const createPlantType = async (req, res, next) => {
 
 const getPlantTypes = async (req, res, next) => {
   try {
-    const plantTypes = await plantTypeService.getPlantTypes();
+    const plantTypes = await plantTypeService.getPlantTypes(req.user);
 
     res.status(statusCode.OK).json({
       message: "PlantTypes retrieved successfully",
@@ -31,9 +31,7 @@ const getPlantTypes = async (req, res, next) => {
 const getPlantTypesById = async(req,res,next)=>{
   try {
     
-    const plantType = await plantTypeService.getPlantTypesById(
-      req.params.id
-    );
+    const plantType = await plantTypeService.getPlantTypesById(req.params.id, req.user);
 
     res.status(statusCode.OK).json({
       message: "PlantTypes retrieved successfully",
@@ -72,7 +70,8 @@ const uploadPlantTypeImage = async (req, res, next) => {
 
     const plantType = await plantTypeService.attachPlantTypeImage(
       req.params.id,
-      req.file
+      req.file,
+      req.user
     );
 
     res.status(statusCode.OK).json({
@@ -88,7 +87,8 @@ const removePlantTypeImage = async (req, res, next) => {
   try {
     const plantType = await plantTypeService.removePlantTypeImage(
       req.params.id,
-      req.params.imageId
+      req.params.imageId,
+      req.user
     );
 
     res.status(statusCode.OK).json({
@@ -102,7 +102,7 @@ const removePlantTypeImage = async (req, res, next) => {
 
 const deletePlantType = async (req, res, next) => {
   try {
-    const plantType = await plantTypeService.deletePlantType(req.params.id);
+    const plantType = await plantTypeService.deletePlantType(req.params.id, req.user);
     res.status(statusCode.OK).json({
       message: "PlantType deleted successfully",
       data: plantType

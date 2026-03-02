@@ -2,6 +2,11 @@ const mongoose = require("mongoose");
 
 const seedSchema = new mongoose.Schema(
   {
+    nurseryId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Nursery"
+    },
+
     name: {
       type: String,
       required: true,
@@ -24,6 +29,12 @@ const seedSchema = new mongoose.Schema(
       type: Number,
       required: true,
       min: 1,
+    },
+
+    quantityUnit: {
+      type: String,
+      enum: ["SEEDS", "GRAM", "KG", "UNITS"],
+      default: "SEEDS",
     },
 
     seedsUsed: {
@@ -58,6 +69,15 @@ const seedSchema = new mongoose.Schema(
     isDeleted: {
       type: Boolean,
       default: false,
+    },
+
+    deletedAt: {
+      type: Date,
+    },
+
+    deletedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
     },
 
     createdBy: {
