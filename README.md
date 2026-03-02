@@ -1,302 +1,252 @@
-# Plant Nursery Management System (PNMS) - Backend API
+# PNMS Backend API (Production Refactor v2)
 
-## Overview
-Backend API for a nursery workflow built with Node.js, Express, MongoDB, and Mongoose.
+## Changelog
 
-Core lifecycle:
-`Seed -> SowingBatch -> Germination -> PlantInventory -> Sale`
-
-Key behavior:
-- Seeds are consumables (not directly sellable inventory).
-- Inventory is created from germination or purchased stock.
-- Sales deduct inventory in FIFO order by batch.
-- Profit report is date-range based from sales, expenses, and labour costs.
+### v2.0.0
+- Replaced legacy role model with: `SUPER_ADMIN`, `NURSERY_ADMIN`, `STAFF`, `CUSTOMER`.
+- Phone-first authentication added (`/api/auth/login` supports `phoneNumber + password`).
+- Added partial-payment support on sales (`paidAmount`, `dueAmount`, `paymentStatus`).
+- Added payment verification workflow with proof support (`/api/payments`, `/api/payments/:id/verify`).
+- Added immutable financial ledger entries for financial events.
+- Added sale return + inventory adjustment flow (`/api/sales/:id/returns`).
+- Added super-admin multi-nursery management (`/api/nurseries`).
+- Added banner management (`/api/banners`).
+- Added report export APIs (`/api/reports/export`, `/api/reports/:id/download`).
+- Added staff accounting summary endpoint (`/api/staff-accounts`).
+- Added `PlantType.expectedSeedQtyPerBatch` and `PlantType.expectedSeedUnit`.
+- Enforced soft-delete behavior in key business entities (customer/expense/plant type).
 
 ## Tech Stack
 - Node.js (CommonJS)
 - Express 5
 - MongoDB + Mongoose
-- Joi (request validation)
-- JWT auth (`jsonwebtoken`)
-- Multer (image upload)
+- Joi validation
+- JWT auth
 
-## Run Locally
+## Setup
+
 1. Install dependencies:
 ```bash
 npm install
 ```
-2. Configure `.env` (see below).
-3. Start dev server:
-```bash
-npm run dev
-```
-
-Server starts on `PORT` (default `5000`), binding to `0.0.0.0`.
-
-Health endpoint:
-- `GET /health` -> `{ "status": "OK" }`
-
-## Environment Variables
-Required by current code:
-- `MONGODB_URI`
-- `JWT_SECRET`
-- `UPLOADS_BASE_PATH`
-
-Optional:
-- `PORT` (default: `5000`)
-
-Example:
+2. Configure `.env`:
 ```env
 PORT=5000
 MONGODB_URI=mongodb://127.0.0.1:27017/pnms
 JWT_SECRET=replace-with-strong-secret
 UPLOADS_BASE_PATH=/absolute/path/to/uploads
 ```
-
-## Auth and RBAC
-### Login
-- `POST /api/auth/login`
-- Public endpoint
-- Returns JWT with payload: `{ userId, role }`, expiry `1d`
-
-### Auth Header
-Protected endpoints require:
-```http
-Authorization: Bearer <JWT_TOKEN>
+3. Run migration:
+```bash
+npm run migrate:v2
 ```
+4. Start server:
+```bash
+npm run dev
+```
+
+Health check:
+- `GET /health`
+
+## Roles and Permissions
 
 ### Roles
-- `ADMIN`
+- `SUPER_ADMIN`
+- `NURSERY_ADMIN`
 - `STAFF`
-- `VIEWER`
+- `CUSTOMER`
 
-## Role Permission Matrix
-| Module / Action | ADMIN | STAFF | VIEWER |
-| --- | --- | --- | --- |
-| Auth: Login | Yes | Yes | Yes |
-| Users: Create / List / Get / Update / Disable | Yes | No | No |
-| Plant Types: Create / Update / Delete / Upload Image | Yes | No | No |
-| Plant Types: List / Get | Yes | Yes | Yes |
-| Seeds: Create / Update / Delete / Upload Image | No | Yes | No |
-| Seeds: List / Get | Yes | Yes | Yes |
-| Sowing: Create | No | Yes | No |
-| Sowing: List | Yes | Yes | Yes |
-| Germination: Create | No | Yes | No |
-| Germination: List | Yes | Yes | Yes |
-| Inventory: Create Purchased Inventory | No | Yes | No |
-| Inventory: List / Get | Yes | Yes | Yes |
-| Sales: Create | Yes | Yes | No |
-| Sales: List / Get | Yes | Yes | Yes |
-| Customers: Create / Update / Delete | No | Yes | No |
-| Customers: List / Get | Yes | Yes | Yes |
-| Expenses: Create / Update / Delete | No | Yes | No |
-| Expenses: List / Get | Yes | Yes | Yes |
-| Labours: Create / Update / Delete | No | Yes | No |
-| Labours: List / Get | Yes | Yes | Yes |
-| Profit Report: View | Yes | No | No |
+### Access Summary
+- `SUPER_ADMIN`: multi-nursery control, reports, global oversight.
+- `NURSERY_ADMIN`: full CRUD inside nursery, users, payment verification, banners, reports.
+- `STAFF`: operational actions (sowing, germination, inventory, sales, expenses, customers).
+- `CUSTOMER`: own lifecycle visibility, dues, payment proof upload, banner visibility.
 
-## Request Validation (Joi)
-Validation is centralized through middleware (`stripUnknown: true`, `abortEarly: false`).
-
-### ID params
-- `:id` must be a 24-char hex Mongo ObjectId.
-
-### Important request constraints
-- User create: `password` min length `8`.
-- Plant type:
-  - `category`: `VEGETABLE | FLOWER | FRUIT | HERB`
-  - `growthStages[].stage`: `SEED | SOWN | GERMINATED | HARDENED | READY_FOR_SALE`
-  - `growthStages[].dayTo >= dayFrom`
-- Seed:
-  - `plantType` required ObjectId
-  - `totalPurchased >= 1`
-  - `expiryDate > purchaseDate`
-- Sowing: `quantity >= 1`
-- Germination: `germinatedSeeds >= 0`, `discardedSeeds >= 0`
-- Purchased inventory:
-  - `quantity >= 1`
-  - `unitCost >= 0`
-  - `paymentMode`: `CASH | UPI | ONLINE`
-- Sale:
-  - `items[].inventoryId` required
-  - `items[].quantity >= 1`
-  - `paymentMode`: `CASH | UPI | ONLINE`
-- Customer mobile regex: `^[6-9]\d{9}$`
-- Expense type:
-  - `SEED | FERTILIZER | POT | SOIL | WATER | ELECTRICITY | TRANSPORT | TOOLS | OTHER`
-- Labour workType:
-  - `SEED_SOWING | WATERING | POTTING | WEEDING | FERTILIZING | PACKING | LOADING`
-
-## Response Format
-### Standard wrapped format (most endpoints)
-```json
-{
-  "message": "...",
-  "data": {}
-}
-```
-
-### Error format
-```json
-{
-  "success": false,
-  "message": "...",
-  "details": ["..."]
-}
-```
-
-### Known response-shape exceptions in current code
-- Sales endpoints return raw document(s), not `{ message, data }`.
-  - `POST /api/sales`
-  - `GET /api/sales`
-  - `GET /api/sales/:id`
-- Profit endpoint returns:
-```json
-{
-  "success": true,
-  "data": {
-    "period": { "startDate": "...", "endDate": "..." },
-    "totalSales": 0,
-    "totalExpenses": 0,
-    "totalLabourCost": 0,
-    "totalCost": 0,
-    "netProfit": 0
-  }
-}
-```
-
-## Image Upload and URL/Path Enrichment
-Image upload endpoints:
-- `POST /api/plant-types/:id/image`
-- `DELETE /api/plant-types/:id/image/:imageId`
-- `POST /api/seeds/:id/image`
-- `DELETE /api/seeds/:id/image/:imageId`
-
-Upload constraints:
-- Field name: `image`
-- MIME types: `image/jpeg`, `image/png`, `image/webp`
-- Max size: `2MB`
-- Files stored under `UPLOADS_BASE_PATH`
-- Static serving route: `/uploads`
-
-For wrapped responses containing model objects with `images`, middleware enriches output with:
-- `images[].path` (for example `/uploads/<fileName>`)
-- `images[].url` (absolute URL using request host/protocol)
-- `imagePath` and `imageUrl` shortcut fields (latest image)
-
-Note: this enrichment runs on responses shaped as `{ ..., data: ... }`. Raw sales responses do not go through this `data` mapper.
-
-## Business Rules Implemented
-- User disable is soft (`isActive=false`).
-- Seed delete is soft (`isDeleted=true`).
-- Plant type delete is blocked when active inventory exists (`quantity > 0`).
-- Sowing consumes seed stock (`seedsUsed`).
-- Germination cannot exceed remaining sowed quantity.
-- Germination creates inventory batch with source tracking.
-- Purchased inventory also writes an expense record (`type: OTHER`).
-- Inventory cost resolution uses:
-  1. Provided `unitCost` if `> 0`
-  2. `plantType.defaultCostPrice` if `> 0`
-  3. `plantType.sellingPrice` if `> 0`
-- Sale deduction is FIFO across available inventory batches by `receivedAt`, `createdAt`.
-- Sale stores immutable pricing/cost snapshot per item (`priceAtSale`, `costAtSale`, `profit`).
-
-## Data Models (High Level)
-- `User`: name, email (unique), password (hashed), role, isActive, createdBy.
-- `PlantType`: name (unique), category, variety, lifecycleDays, growthStages, sellingPrice, minStockLevel, defaultCostPrice, images.
-- `Seed`: name, plantType ref, supplierName, totalPurchased, seedsUsed, purchaseDate, expiryDate, images, isDeleted, createdBy/updatedBy.
-- `SowingBatch`: seed ref, plantType ref, quantitySown, quantityGerminated, sowingDate, expectedYield, performedBy, roleAtTime.
-- `Germination`: sowingId ref, germinatedSeeds, discardedSeeds, germinationDate, inventoryBatch ref, performedBy, roleAtTime.
-- `PlantInventory`: plantType ref, sourceType/source/sourceModel/sourceRef, quantity, initialQuantity, unitCost, growthStage, status, receivedAt.
-- `Sale`: items[], totalAmount, totalCost, totalProfit, grossMarginPercent, customer ref, paymentMode, saleDate, performedBy, roleAtTime.
-- `Customer`: name, mobileNumber (unique), address.
-- `Expense`: type, description, amount, date.
-- `Labour`: name, workType, hoursWorked, wagePerHour, wagePerDay, date.
-
-## Endpoint Index
-### Health
-- `GET /health` (public)
+## API Documentation
 
 ### Auth
-- `POST /api/auth/login` (public)
+- `POST /api/auth/login`
 
-### Users (ADMIN)
+### Users
 - `POST /api/users`
 - `GET /api/users`
 - `GET /api/users/:id`
 - `PATCH /api/users/:id`
-- `DELETE /api/users/:id` (disable)
+- `DELETE /api/users/:id`
+
+### Nurseries (SUPER_ADMIN)
+- `POST /api/nurseries`
+- `GET /api/nurseries`
+- `POST /api/nurseries/:id/admins`
 
 ### Plant Types
-- `POST /api/plant-types` (ADMIN)
-- `GET /api/plant-types` (ADMIN, STAFF, VIEWER)
-- `GET /api/plant-types/:id` (ADMIN, STAFF, VIEWER)
-- `PATCH /api/plant-types/:id` (ADMIN)
-- `DELETE /api/plant-types/:id` (ADMIN)
-- `POST /api/plant-types/:id/image` (ADMIN, multipart)
-- `DELETE /api/plant-types/:id/image/:imageId` (ADMIN)
+- `POST /api/plant-types`
+- `GET /api/plant-types`
+- `GET /api/plant-types/:id`
+- `PATCH /api/plant-types/:id`
+- `DELETE /api/plant-types/:id`
 
-### Seeds
-- `POST /api/seeds` (STAFF)
-- `GET /api/seeds` (ADMIN, STAFF, VIEWER)
-- `GET /api/seeds/:id` (ADMIN, STAFF, VIEWER)
-- `PATCH /api/seeds/:id` (STAFF)
-- `DELETE /api/seeds/:id` (STAFF, soft delete)
-- `POST /api/seeds/:id/image` (STAFF, multipart)
-- `DELETE /api/seeds/:id/image/:imageId` (STAFF)
-
-### Sowing
-- `POST /api/sowing` (STAFF)
-- `GET /api/sowing` (ADMIN, STAFF, VIEWER)
-
-### Germination
-- `POST /api/germination` (STAFF)
-- `GET /api/germination` (ADMIN, STAFF, VIEWER)
-
-### Inventory
-- `POST /api/inventory` (STAFF)
-- `GET /api/inventory` (ADMIN, STAFF, VIEWER)
-- `GET /api/inventory/:id` (ADMIN, STAFF, VIEWER)
-
-### Sales
-- `POST /api/sales` (ADMIN, STAFF)
-- `GET /api/sales` (ADMIN, STAFF, VIEWER)
-- `GET /api/sales/:id` (ADMIN, STAFF, VIEWER)
-
-### Profit
-- `GET /api/profit?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD` (ADMIN)
+### Seeds / Sowing / Germination / Inventory
+- `POST /api/seeds`, `GET /api/seeds`, `GET /api/seeds/:id`, `PATCH /api/seeds/:id`, `DELETE /api/seeds/:id`
+- `POST /api/sowing`, `GET /api/sowing`
+- `POST /api/germination`, `GET /api/germination`
+- `POST /api/inventory`, `GET /api/inventory`, `GET /api/inventory/:id`
 
 ### Customers
-- `POST /api/customers` (STAFF)
-- `GET /api/customers` (ADMIN, STAFF, VIEWER)
-- `GET /api/customers/:id` (ADMIN, STAFF, VIEWER)
-- `PATCH /api/customers/:id` (STAFF)
-- `DELETE /api/customers/:id` (STAFF)
+- `POST /api/customers`
+- `GET /api/customers`
+- `GET /api/customers/:id`
+- `PATCH /api/customers/:id`
+- `DELETE /api/customers/:id`
 
-### Expenses
-- `POST /api/expenses` (STAFF)
-- `GET /api/expenses` (ADMIN, STAFF, VIEWER)
-- `GET /api/expenses/:id` (ADMIN, STAFF, VIEWER)
-- `PATCH /api/expenses/:id` (STAFF)
-- `DELETE /api/expenses/:id` (STAFF)
+### Sales / Payments / Returns
+- `POST /api/sales`
+- `GET /api/sales`
+- `GET /api/sales/:id`
+- `POST /api/sales/:id/returns`
+- `POST /api/payments`
+- `GET /api/payments`
+- `POST /api/payments/:id/verify`
 
-### Labours
-- `POST /api/labours` (STAFF)
-- `GET /api/labours` (ADMIN, STAFF, VIEWER)
-- `GET /api/labours/:id` (ADMIN, STAFF, VIEWER)
-- `PATCH /api/labours/:id` (STAFF)
-- `DELETE /api/labours/:id` (STAFF)
+### Expenses / Labour / Profit
+- `POST /api/expenses`, `GET /api/expenses`, `GET /api/expenses/:id`, `PATCH /api/expenses/:id`, `DELETE /api/expenses/:id`
+- `POST /api/labours`, `GET /api/labours`, `GET /api/labours/:id`, `PATCH /api/labours/:id`, `DELETE /api/labours/:id`
+- `GET /api/profit?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD`
 
-## Utility Script
-Create initial admin user:
-```bash
-node src/scripts/createAdmin.js
+### Banners / Reports / Staff Accounting
+- `POST /api/banners`, `GET /api/banners`, `PATCH /api/banners/:id`
+- `POST /api/reports/export`
+- `GET /api/reports/:id/download`
+- `GET /api/staff-accounts`
+
+## Sample Request / Response
+
+### 1) Login (Phone)
+`POST /api/auth/login`
+
+Request:
+```json
+{
+  "phoneNumber": "9876543210",
+  "password": "password123"
+}
 ```
-Script uses `MONGODB_URI` from `.env` and inserts:
-- email: `test@example.com`
-- password: `test_pass`
-- role: `ADMIN`
+
+Response:
+```json
+{
+  "message": "Login successful",
+  "data": {
+    "token": "<jwt>",
+    "user": {
+      "_id": "65f...",
+      "name": "Nursery Admin",
+      "role": "NURSERY_ADMIN",
+      "phoneNumber": "+919876543210"
+    }
+  }
+}
+```
+
+### 2) Create Sale (Partial Payment)
+`POST /api/sales`
+
+Request:
+```json
+{
+  "customer": "65f0c13d4a6d6e0010e53122",
+  "items": [
+    { "inventoryId": "65f0c16d4a6d6e0010e53123", "quantity": 20 }
+  ],
+  "paymentMode": "UPI",
+  "amountPaid": 100,
+  "discountAmount": 20,
+  "transactionRef": "UPI-TXN-1001"
+}
+```
+
+Response (sample fields):
+```json
+{
+  "_id": "65f0c18d4a6d6e0010e53124",
+  "saleNumber": "SALE-000123",
+  "totalAmount": 240,
+  "grossAmount": 240,
+  "netAmount": 220,
+  "paidAmount": 100,
+  "dueAmount": 120,
+  "paymentStatus": "PARTIALLY_PAID",
+  "verificationStatus": "VERIFIED"
+}
+```
+
+### 3) Verify Payment
+`POST /api/payments/:id/verify`
+
+Request:
+```json
+{
+  "action": "ACCEPT"
+}
+```
+
+Response:
+```json
+{
+  "message": "Payment verified successfully",
+  "data": {
+    "_id": "65f0c21d4a6d6e0010e53130",
+    "status": "VERIFIED",
+    "amount": 200,
+    "mode": "UPI"
+  }
+}
+```
+
+### 4) Export Report
+`POST /api/reports/export`
+
+Request:
+```json
+{
+  "reportType": "SALES",
+  "format": "XLSX",
+  "startDate": "2026-02-01",
+  "endDate": "2026-02-28"
+}
+```
+
+Response:
+```json
+{
+  "message": "Report export generated successfully",
+  "data": {
+    "reportId": "65f0d11d4a6d6e0010e53190",
+    "status": "READY",
+    "fileName": "sales_1700000000000.xlsx.csv"
+  }
+}
+```
 
 ## Postman Collections
-- `PNMS-postman-collection.json`
-- `PNMS-postman-collection-by-role.json`
+- `postman/PNMS-Frontend-QA.postman_collection.json`
+- `postman/PNMS-Frontend-QA.postman_environment.json`
+
+Generate/verify:
+```bash
+npm run qa:reset-seed
+npm run postman:build
+npm run postman:env:template
+npm run postman:verify
+```
+
+## Utilities
+Reset DB and seed deterministic QA data:
+```bash
+npm run qa:reset-seed
+```
+
+## Notes
+- Financial operations run in DB transactions.
+- Financial ledger entries are immutable (append-only).
+- Legacy role migration mapping is handled in `npm run migrate:v2`.
