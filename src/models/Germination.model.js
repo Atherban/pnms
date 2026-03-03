@@ -12,6 +12,10 @@ const germinationSchema = new mongoose.Schema(
       ref: "SowingBatch",
       required: true
     },
+    customerSeedBatch: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "CustomerSeedBatch"
+    },
     germinatedSeeds: {
       type: Number,
       required: true,
@@ -43,5 +47,18 @@ const germinationSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+germinationSchema.index({ nurseryId: 1, createdAt: -1 });
+germinationSchema.index({ sowingId: 1, createdAt: -1 });
+germinationSchema.index({ customerSeedBatch: 1, createdAt: -1 });
+
+germinationSchema.pre("validate", function () {
+  const germinated = Number(this.germinatedSeeds || 0);
+  const discarded = Number(this.discardedSeeds || 0);
+
+  if (germinated + discarded <= 0) {
+    throw new Error("germinatedSeeds or discardedSeeds must be greater than 0");
+  }
+});
 
 module.exports = mongoose.model("Germination", germinationSchema);

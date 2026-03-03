@@ -6,7 +6,7 @@ const authenticate = require("../middlewares/auth.middleware");
 const authorize = require("../middlewares/rbac.middleware");
 const validate = require("../middlewares/validate.middleware");
 const { objectIdSchema } = require("../validations/common.validation");
-const { exportReportSchema } = require("../validations/report.validation");
+const { exportReportSchema, analyticsQuerySchema } = require("../validations/report.validation");
 
 router.post(
   "/export",
@@ -14,6 +14,30 @@ router.post(
   authorize("SUPER_ADMIN", "NURSERY_ADMIN"),
   validate(exportReportSchema),
   reportController.exportReport
+);
+
+router.get(
+  "/analytics",
+  authenticate,
+  authorize("SUPER_ADMIN", "NURSERY_ADMIN"),
+  validate(analyticsQuerySchema, "query"),
+  reportController.getAnalytics
+);
+
+router.get(
+  "/download/pdf",
+  authenticate,
+  authorize("SUPER_ADMIN", "NURSERY_ADMIN"),
+  validate(analyticsQuerySchema, "query"),
+  reportController.downloadReportPdf
+);
+
+router.get(
+  "/download/excel",
+  authenticate,
+  authorize("SUPER_ADMIN", "NURSERY_ADMIN"),
+  validate(analyticsQuerySchema, "query"),
+  reportController.downloadReportExcel
 );
 
 router.get(

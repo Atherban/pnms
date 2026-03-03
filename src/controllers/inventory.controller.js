@@ -6,7 +6,7 @@ const {
   createPurchasedInventory
 } = require("../services/inventory.service");
 const {
-  getCustomerPurchasedInventoryIds
+  getCustomerAccessibleInventoryIds
 } = require("../services/accessScope.service");
 
 const INVENTORY_POPULATION = [
@@ -26,6 +26,10 @@ const INVENTORY_POPULATION = [
           {
             path: "plantType",
             select: "name category variety sellingPrice images expectedSeedQtyPerBatch expectedSeedUnit"
+          },
+          {
+            path: "customerSeedBatch",
+            select: "seedQuantity seedsSown seedsGerminated seedsDiscarded status estimatedPickupDate"
           }
         ]
       },
@@ -34,8 +38,18 @@ const INVENTORY_POPULATION = [
         strictPopulate: false,
         select: "quantity growthStage status receivedAt"
       },
+      {
+        path: "saleId",
+        strictPopulate: false,
+        select: "saleNumber status paymentStatus totalAmount dueAmount"
+      },
       { path: "performedBy", strictPopulate: false, select: "name email role" }
     ]
+  },
+  { path: "customerId", select: "name mobileNumber" },
+  {
+    path: "customerSeedBatch",
+    select: "seedQuantity seedsSown seedsGerminated seedsDiscarded status estimatedPickupDate"
   }
 ];
 
@@ -71,7 +85,7 @@ const getInventory = async (req, res, next) => {
     }
 
     if (req.user.role === "CUSTOMER") {
-      const inventoryIds = await getCustomerPurchasedInventoryIds(req.user);
+      const inventoryIds = await getCustomerAccessibleInventoryIds(req.user);
       query._id = { $in: inventoryIds };
     }
 
@@ -96,7 +110,7 @@ const getInventoryById = async (req, res, next) => {
     }
 
     if (req.user.role === "CUSTOMER") {
-      const inventoryIds = await getCustomerPurchasedInventoryIds(req.user);
+      const inventoryIds = await getCustomerAccessibleInventoryIds(req.user);
       if (!inventoryIds.some((id) => id.toString() === req.params.id)) {
         throw new ApiError(statusCode.NOT_FOUND, "Inventory item not found");
       }

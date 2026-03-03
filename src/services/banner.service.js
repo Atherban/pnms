@@ -54,16 +54,23 @@ const normalizeBannerPayloadForRole = (payload, user) => {
 
 const createBanner = async (payload, user) => {
   const normalizedPayload = normalizeBannerPayloadForRole(payload, user);
+  const normalizedPriority = Number.isFinite(Number(normalizedPayload.priority))
+    ? Number(normalizedPayload.priority)
+    : getScopePriority(normalizedPayload.scope);
+  const normalizedColor = String(normalizedPayload.color || "").trim() || "#0EA5E9";
 
   const banner = await Banner.create({
     scope: normalizedPayload.scope,
     nurseryId: normalizedPayload.nurseryId,
     title: normalizedPayload.title,
+    subtitle: String(normalizedPayload.subtitle || "").trim() || undefined,
+    cta: String(normalizedPayload.cta || "").trim() || undefined,
+    color: normalizedColor,
     image: normalizedPayload.imageFileName
       ? { fileName: normalizedPayload.imageFileName, uploadedAt: new Date() }
       : undefined,
     redirectUrl: normalizedPayload.redirectUrl,
-    priority: getScopePriority(normalizedPayload.scope),
+    priority: normalizedPriority,
     startAt: normalizedPayload.startAt,
     endAt: normalizedPayload.endAt,
     status: normalizedPayload.status,
@@ -149,8 +156,24 @@ const updateBanner = async (bannerId, payload, user) => {
   }
 
   const update = { ...payload };
+  if (update.color !== undefined) {
+    const nextColor = String(update.color || "").trim();
+    update.color = nextColor || "#0EA5E9";
+  }
+  if (update.subtitle !== undefined) {
+    update.subtitle = String(update.subtitle || "").trim();
+  }
+  if (update.cta !== undefined) {
+    update.cta = String(update.cta || "").trim();
+  }
 
-  delete update.priority;
+  if (update.priority !== undefined) {
+    const parsedPriority = Number(update.priority);
+    if (!Number.isFinite(parsedPriority)) {
+      throw new ApiError(statusCode.BAD_REQUEST, "priority must be a valid number");
+    }
+    update.priority = parsedPriority;
+  }
   delete update.scope;
   delete update.nurseryId;
 

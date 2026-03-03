@@ -6,13 +6,19 @@ const Nursery = require("../models/Nursery.model");
 
 const authenticate = async (req, res, next) => {
   try {
+    if (!process.env.JWT_SECRET) {
+      return next(new ApiError(500, "JWT secret is not configured"));
+    }
+
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return next(new ApiError(401, "Authentication required"));
     }
 
     const token = authHeader.split(" ")[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, {
+      algorithms: ["HS256"]
+    });
 
     const user = await User.findById(decoded.userId).select("_id role nurseryId isActive deletedAt");
     if (!user || user.deletedAt) {

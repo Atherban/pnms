@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Germination = require("../models/Germination.model");
 const SowingBatch = require("../models/SowingBatch.model");
+const CustomerSeedBatch = require("../models/CustomerSeedBatch.model");
 const ApiError = require("../exceptions/ApiError");
 const statusCode = require("../enums/statusCode");
 const {
@@ -8,6 +9,7 @@ const {
 } = require("./inventory.service");
 const { createCustomerNotification } = require("./notification.service");
 const Customer = require("../models/Customer.model");
+const { createServiceSaleForBatch } = require("./customerSeedBatch.service");
 const { normalizeGerminationCustomer } = require("../utils/customerIdentity.util");
 
 const GERMINATION_POPULATION = [
@@ -17,6 +19,11 @@ const GERMINATION_POPULATION = [
       { path: "seed", select: "name supplierName expiryDate images" },
       { path: "plantType", select: "name category variety sellingPrice images expectedSeedQtyPerBatch" },
       { path: "customerId", select: "mobileNumber" },
+      {
+        path: "customerSeedBatch",
+        select:
+          "seedQuantity seedsSown germinatedQuantity discardedQuantity status expectedReadyDate serviceChargeEstimate discountAmount finalAmount saleId"
+      },
       { path: "performedBy", select: "name email role" }
     ]
   },
@@ -26,6 +33,11 @@ const GERMINATION_POPULATION = [
       { path: "plantType", select: "name category variety sellingPrice images expectedSeedQtyPerBatch" },
       { path: "sourceRef" }
     ]
+  },
+  {
+    path: "customerSeedBatch",
+    select:
+      "seedQuantity seedsSown germinatedQuantity discardedQuantity status expectedReadyDate serviceChargeEstimate discountAmount finalAmount saleId"
   },
   { path: "performedBy", select: "name email role" }
 ];
@@ -46,11 +58,11 @@ const recordGermination = async (data, user) => {
     }
 
     const availableForGermination =
-      sowing.quantitySown - (sowing.quantityGerminated || 0);
-    if (data.germinatedSeeds > availableForGermination) {
+      (sowing.quantitySown || 0) - (sowing.quantityGerminated || 0) - (sowing.quantityDiscarded || 0);
+    if (data.germinatedSeeds + (data.discardedSeeds || 0) > availableForGermination) {
       throw new ApiError(
         statusCode.BAD_REQUEST,
-        "Germinated seeds exceed remaining seeds in sowing batch"
+        "Germinated + discarded seeds exceed remaining seeds in sowing batch"
       );
     }
 
@@ -60,6 +72,7 @@ const recordGermination = async (data, user) => {
         {
           nurseryId: user.nurseryId || sowing.nurseryId || null,
           sowingId: sowing._id,
+          customerSeedBatch: sowing.customerSeedBatch || undefined,
           germinatedSeeds: data.germinatedSeeds,
           discardedSeeds: data.discardedSeeds || 0,
           germinationDate: data.germinationDate || new Date(),
@@ -71,13 +84,16 @@ const recordGermination = async (data, user) => {
     );
 
     sowing.quantityGerminated += data.germinatedSeeds;
+    sowing.quantityDiscarded = (sowing.quantityDiscarded || 0) + (data.discardedSeeds || 0);
     await sowing.save({ session });
 
     const inventory = await createInventoryFromGermination(
       {
         plantType: sowing.plantType,
         quantity: data.germinatedSeeds,
-        receivedAt: data.germinationDate || new Date()
+        receivedAt: data.germinationDate || new Date(),
+        customerId: sowing.customerId || undefined,
+        customerSeedBatch: sowing.customerSeedBatch || undefined
       },
       germination._id,
       session,
@@ -87,6 +103,60 @@ const recordGermination = async (data, user) => {
 
     germination.inventoryBatch = inventory._id;
     await germination.save({ session });
+
+    if (sowing.customerSeedBatch) {
+      const customerSeedBatch = await CustomerSeedBatch.findById(sowing.customerSeedBatch).session(session);
+      if (customerSeedBatch) {
+        customerSeedBatch.germinationId = germination._id;
+        customerSeedBatch.germinatedQuantity =
+          (customerSeedBatch.germinatedQuantity || customerSeedBatch.seedsGerminated || 0) +
+          (data.germinatedSeeds || 0);
+        customerSeedBatch.discardedQuantity =
+          (customerSeedBatch.discardedQuantity || customerSeedBatch.seedsDiscarded || 0) +
+          (data.discardedSeeds || 0);
+        customerSeedBatch.seedsGerminated = customerSeedBatch.germinatedQuantity;
+        customerSeedBatch.seedsDiscarded = customerSeedBatch.discardedQuantity;
+        customerSeedBatch.updatedBy = user.userId;
+
+        const totalProcessed =
+          (customerSeedBatch.germinatedQuantity || 0) + (customerSeedBatch.discardedQuantity || 0);
+        const totalSown = customerSeedBatch.seedsSown || 0;
+
+        if (totalProcessed >= totalSown && totalSown > 0) {
+          customerSeedBatch.status =
+            (customerSeedBatch.germinatedQuantity || 0) > 0 ? "READY" : "DISCARDED";
+          if (customerSeedBatch.status === "DISCARDED") {
+            customerSeedBatch.discardedAt = new Date();
+          }
+        } else {
+          customerSeedBatch.status = "GERMINATING";
+        }
+
+        await customerSeedBatch.save({ session });
+
+        if (customerSeedBatch.status === "READY" && !customerSeedBatch.saleId) {
+          const autoSale = await createServiceSaleForBatch({
+            batch: customerSeedBatch,
+            user,
+            session
+          });
+          customerSeedBatch.saleId = autoSale._id;
+          await customerSeedBatch.save({ session });
+
+          if ((autoSale.dueAmount || 0) > 0) {
+            await createCustomerNotification({
+              nurseryId: user.nurseryId || sowing.nurseryId || null,
+              customerId: sowing.customerId,
+              type: "PAYMENT_DUE",
+              title: "Payment due",
+              message: `Service due amount is ${autoSale.dueAmount}.`,
+              meta: { seedBatchId: customerSeedBatch._id, saleId: autoSale._id, dueAmount: autoSale.dueAmount },
+              session
+            });
+          }
+        }
+      }
+    }
 
     if (sowing.customerId) {
       await createCustomerNotification({
@@ -99,15 +169,19 @@ const recordGermination = async (data, user) => {
         session
       });
 
-      await createCustomerNotification({
-        nurseryId: user.nurseryId || sowing.nurseryId || null,
-        customerId: sowing.customerId,
-        type: "PRODUCT_READY",
-        title: "Plant ready",
-        message: "Your plants are now ready and available in inventory.",
-        meta: { inventoryBatchId: inventory._id },
-        session
-      });
+      const sowingProcessed =
+        (sowing.quantityGerminated || 0) + (sowing.quantityDiscarded || 0);
+      if (sowingProcessed >= (sowing.quantitySown || 0)) {
+        await createCustomerNotification({
+          nurseryId: user.nurseryId || sowing.nurseryId || null,
+          customerId: sowing.customerId,
+          type: "PRODUCT_READY",
+          title: "Plant ready",
+          message: "Your plants are now ready and available in inventory.",
+          meta: { inventoryBatchId: inventory._id, sowingId: sowing._id },
+          session
+        });
+      }
     }
 
     await session.commitTransaction();

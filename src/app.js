@@ -2,6 +2,10 @@ const express = require("express");
 const helmet = require("helmet");
 const errorHandler = require("./middlewares/errorHandler.middleware");
 const responseImageMiddleware = require("./middlewares/responseImage.middleware");
+const {
+  createRateLimiter,
+  rejectUnsafePayload
+} = require("./middlewares/security.middleware");
 
 const seedRoutes = require("./routes/seed.routes");
 const sowingRoutes = require("./routes/sowing.routes");
@@ -13,6 +17,7 @@ const userRoutes = require("./routes/user.routes");
 const plantTypeRoutes = require("./routes/plantType.routes");
 const inventoryRoutes = require("./routes/inventory.routes");
 const customerRoutes = require("./routes/customer.routes");
+const customerSeedBatchRoutes = require("./routes/customerSeedBatch.routes");
 const expenseRoutes = require("./routes/expense.routes");
 const labourRoutes = require("./routes/labour.routes");
 const paymentRoutes = require("./routes/payment.routes");
@@ -28,12 +33,34 @@ const maintenanceRoutes = require("./routes/maintenance.routes");
 const app = express();
 
 app.use(helmet());
-app.use(express.json());
+app.disable("x-powered-by");
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: false, limit: "1mb" }));
+app.use(createRateLimiter());
+app.use(rejectUnsafePayload);
 app.use(responseImageMiddleware);
+app.use((req, res, next) => {
+  const originalJson = res.json.bind(res);
+  res.json = (body) => {
+    if (
+      body &&
+      typeof body === "object" &&
+      !Array.isArray(body) &&
+      !Object.prototype.hasOwnProperty.call(body, "success")
+    ) {
+      return originalJson({
+        success: res.statusCode < 400,
+        ...body
+      });
+    }
+    return originalJson(body);
+  };
+  next();
+});
 
 // health check
 app.get("/health", (req, res) => {
-  res.status(200).json({ status: "OK" });
+  res.status(200).json({ success: true, status: "OK" });
 });
 
 
@@ -48,6 +75,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/plant-types", plantTypeRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/customers", customerRoutes);
+app.use("/api/customer-seed-batches", customerSeedBatchRoutes);
 app.use("/api/expenses", expenseRoutes);
 app.use("/api/labours", labourRoutes);
 app.use("/api/payments", paymentRoutes);

@@ -1,4 +1,5 @@
 const statusCode = require("../enums/statusCode");
+const mongoose = require("mongoose");
 const StaffAccount = require("../models/StaffAccount.model");
 const Sale = require("../models/Sale.model");
 const Expense = require("../models/Expense.model");
@@ -41,11 +42,17 @@ const getStaffAccounts = async (req, res, next) => {
     const query = {};
     if (req.user.nurseryId) {
       query.nurseryId = req.user.nurseryId;
-    } else if (req.user.role === "SUPER_ADMIN" && req.query.nurseryId) {
+    } else if (
+      req.user.role === "SUPER_ADMIN" &&
+      req.query.nurseryId &&
+      mongoose.isValidObjectId(req.query.nurseryId)
+    ) {
       query.nurseryId = req.query.nurseryId;
     }
 
-    if (req.query.staffUserId) query.staffUserId = req.query.staffUserId;
+    if (req.query.staffUserId && mongoose.isValidObjectId(req.query.staffUserId)) {
+      query.staffUserId = req.query.staffUserId;
+    }
 
     const accounts = await StaffAccount.find(query)
       .populate({

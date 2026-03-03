@@ -6,16 +6,22 @@ const { normalizeRole } = require("../utils/role.util");
 const { normalizePhoneNumber } = require("../utils/phone.util");
 const { ensureCustomerProfileForUser } = require("./customer.service");
 
-const signAuthToken = (user) => jwt.sign(
-  {
-    userId: user._id,
-    role: normalizeRole(user.role),
-    nurseryId: user.nurseryId || null,
-    tokenVersion: 1
-  },
-  process.env.JWT_SECRET,
-  { expiresIn: "1d" },
-);
+const signAuthToken = (user) => {
+  if (!process.env.JWT_SECRET) {
+    throw new ApiError(500, "JWT secret is not configured");
+  }
+
+  return jwt.sign(
+    {
+      userId: user._id,
+      role: normalizeRole(user.role),
+      nurseryId: user.nurseryId || null,
+      tokenVersion: 1
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "1d", algorithm: "HS256" }
+  );
+};
 
 const login = async ({ email, phoneNumber, password }) => {
   const normalizedEmail = email ? String(email).toLowerCase() : null;

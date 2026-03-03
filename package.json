@@ -5,12 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon src/server.js",
-    "backfill:customers": "node src/scripts/backfillCustomerProfiles.js",
-    "qa:reset-seed": "node src/scripts/resetAndSeedData.js",
-    "postman:build": "node src/scripts/buildFrontendPostmanCollection.js",
-    "postman:env": "node src/scripts/buildFrontendPostmanEnvironment.js",
-    "postman:env:template": "node src/scripts/buildFrontendPostmanEnvironment.js --skip-seed",
-    "postman:verify": "node src/scripts/verifyFrontendPostmanCoverage.js"
+    "test": "node --test tests/*.test.js"
   },
   "keywords": [],
   "author": "",
@@ -25,7 +20,9 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.1.4",
     "multer": "^2.0.2",
-    "node-cron": "^4.2.1"
+    "node-cron": "^4.2.1",
+    "pdfkit": "^0.15.0",
+    "exceljs": "^4.4.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.11"

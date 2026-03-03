@@ -46,7 +46,7 @@ router.patch(
 router.delete(
   "/:id",
   authenticate,
-  authorize("STAFF", "NURSERY_ADMIN", "SUPER_ADMIN"),
+  authorize("NURSERY_ADMIN", "SUPER_ADMIN"),
   validate(objectIdSchema, "params"),
   labourController.deleteLabour
 );

@@ -228,24 +228,6 @@ Response:
 }
 ```
 
-## Postman Collections
-- `postman/PNMS-Frontend-QA.postman_collection.json`
-- `postman/PNMS-Frontend-QA.postman_environment.json`
-
-Generate/verify:
-```bash
-npm run qa:reset-seed
-npm run postman:build
-npm run postman:env:template
-npm run postman:verify
-```
-
-## Utilities
-Reset DB and seed deterministic QA data:
-```bash
-npm run qa:reset-seed
-```
-
 ## Notes
 - Financial operations run in DB transactions.
 - Financial ledger entries are immutable (append-only).

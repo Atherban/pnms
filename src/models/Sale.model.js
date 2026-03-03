@@ -63,6 +63,25 @@ const saleSchema = new mongoose.Schema(
         ]
       }
     ],
+    saleKind: {
+      type: String,
+      enum: ["PRODUCT", "SERVICE", "SERVICE_SALE"],
+      default: "PRODUCT"
+    },
+    customerSeedBatch: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "CustomerSeedBatch"
+    },
+    serviceInvoice: {
+      sowingCharge: { type: Number, min: 0, default: 0 },
+      germinationCharge: { type: Number, min: 0, default: 0 },
+      labourCharge: { type: Number, min: 0, default: 0 },
+      soilCharge: { type: Number, min: 0, default: 0 },
+      trayCharge: { type: Number, min: 0, default: 0 },
+      maintenanceCharge: { type: Number, min: 0, default: 0 },
+      otherCharge: { type: Number, min: 0, default: 0 },
+      notes: { type: String }
+    },
 
     totalCost: {
       type: Number,
@@ -137,6 +156,11 @@ const saleSchema = new mongoose.Schema(
       enum: ["CASH", "UPI", "ONLINE", "BANK_TRANSFER"],
       required: true
     },
+    status: {
+      type: String,
+      enum: ["PENDING", "COMPLETED", "CANCELLED", "PARTIALLY_RETURNED", "RETURNED"],
+      default: "COMPLETED"
+    },
 
     saleDate: {
       type: Date,
@@ -175,6 +199,19 @@ const saleSchema = new mongoose.Schema(
 saleSchema.index({ saleDate: 1 });
 saleSchema.index({ nurseryId: 1, saleNumber: 1 }, { unique: true, sparse: true });
 saleSchema.index({ paymentStatus: 1, dueAmount: 1 });
+saleSchema.index({ nurseryId: 1, saleKind: 1, createdAt: -1 });
+saleSchema.index({ nurseryId: 1, status: 1, createdAt: -1 });
+saleSchema.index({ nurseryId: 1, customer: 1, createdAt: -1 });
+saleSchema.index(
+  { customerSeedBatch: 1, saleKind: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      customerSeedBatch: { $exists: true, $type: "objectId" },
+      saleKind: "SERVICE_SALE"
+    }
+  }
+);
 
 saleSchema.pre("validate", function () {
   if (this.grossAmount === undefined || this.grossAmount === null) {
@@ -186,6 +223,12 @@ saleSchema.pre("validate", function () {
   }
 
   const paid = this.paidAmount || 0;
+  if (paid < 0) {
+    throw new Error("paidAmount cannot be negative");
+  }
+  if (paid > (this.netAmount || 0)) {
+    throw new Error("paidAmount cannot exceed netAmount");
+  }
   this.dueAmount = Math.max((this.netAmount || 0) - paid, 0);
 
   if (this.dueAmount === 0) {

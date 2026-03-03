@@ -52,6 +52,8 @@ const paymentSchema = new mongoose.Schema(
 
 paymentSchema.index({ saleId: 1, status: 1 });
 paymentSchema.index({ nurseryId: 1, createdAt: -1 });
+paymentSchema.index({ customerId: 1, createdAt: -1 });
+paymentSchema.index({ nurseryId: 1, saleId: 1, createdAt: -1 });
 
 paymentSchema.pre("validate", function () {
   const hasUtr = !!String(this.utrNumber || "").trim();
@@ -63,6 +65,14 @@ paymentSchema.pre("validate", function () {
 
   if (!hasUtr && hasTxRef && this.mode !== "CASH") {
     this.utrNumber = this.transactionRef;
+  }
+
+  if (this.status === "VERIFIED" && !this.verifiedAt) {
+    this.verifiedAt = new Date();
+  }
+
+  if (this.status === "REJECTED" && !this.rejectionReason) {
+    this.rejectionReason = "Payment proof rejected";
   }
 });
 

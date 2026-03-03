@@ -3,6 +3,7 @@ const Payment = require("../models/Payment.model");
 const Sale = require("../models/Sale.model");
 const FinancialLedgerEntry = require("../models/FinancialLedgerEntry.model");
 const AuditLog = require("../models/AuditLog.model");
+const CustomerSeedBatch = require("../models/CustomerSeedBatch.model");
 const { upsertStaffAccount } = require("./staffAccount.service");
 const ApiError = require("../exceptions/ApiError");
 const statusCode = require("../enums/statusCode");
@@ -28,6 +29,26 @@ const recalculateSalePaymentStatus = (sale) => {
   } else {
     sale.paymentStatus = "UNPAID";
   }
+};
+
+const normalizePaymentMode = (mode) => {
+  const normalized = String(mode || "").trim().toUpperCase();
+  return normalized === "BANK" ? "BANK_TRANSFER" : normalized;
+};
+
+const canAutoVerifyWalkInPayment = ({ sale, user, autoVerify }) => {
+  if (!autoVerify) return false;
+  const role = String(user?.role || "").toUpperCase();
+  const isPrivilegedRole =
+    role === "STAFF" || role === "NURSERY_ADMIN" || role === "SUPER_ADMIN";
+  const isWalkInSale = !sale?.customer;
+  return isPrivilegedRole && isWalkInSale;
+};
+
+const toValidDateOrUndefined = (value) => {
+  if (!value) return undefined;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed;
 };
 
 const createPaymentRequest = async (payload, user, file) => {
@@ -62,35 +83,101 @@ const createPaymentRequest = async (payload, user, file) => {
 
   const normalizedUtr = String(payload.utrNumber || "").trim() || null;
   const normalizedTxRef = String(payload.transactionRef || "").trim() || null;
+  const normalizedMode = normalizePaymentMode(payload.mode);
 
-  if (payload.mode !== "CASH" && !normalizedUtr) {
+  if (normalizedMode !== "CASH" && !normalizedUtr) {
     throw new ApiError(statusCode.BAD_REQUEST, "utrNumber is required for UPI, ONLINE and BANK_TRANSFER payments");
+  }
+
+  const autoVerifyWalkIn = canAutoVerifyWalkInPayment({
+    sale,
+    user,
+    autoVerify: Boolean(payload.autoVerify)
+  });
+  if (payload.autoVerify && !autoVerifyWalkIn) {
+    throw new ApiError(
+      statusCode.FORBIDDEN,
+      "Auto-verify is allowed only for walk-in sale payments by staff/admin."
+    );
   }
 
   const payment = await Payment.create({
     nurseryId: sale.nurseryId,
     saleId: sale._id,
-    customerId: sale.customer,
+    customerId: sale.customer || undefined,
     amount: payload.amount,
-    mode: payload.mode,
-    status: payload.mode === "CASH" && payload.autoVerify ? "VERIFIED" : "PENDING_VERIFICATION",
+    mode: normalizedMode,
+    status: autoVerifyWalkIn ? "VERIFIED" : "PENDING_VERIFICATION",
     utrNumber: normalizedUtr,
     transactionRef: normalizedTxRef || normalizedUtr,
+    receivedAt: toValidDateOrUndefined(payload.paymentAt),
     proofImage: (file?.filename || payload.paymentProofFileName)
       ? {
           fileName: file?.filename || payload.paymentProofFileName,
           uploadedAt: new Date()
         }
       : undefined,
-    verifiedBy: payload.mode === "CASH" && payload.autoVerify ? user.userId : undefined,
-    verifiedAt: payload.mode === "CASH" && payload.autoVerify ? new Date() : undefined
+    verifiedBy: autoVerifyWalkIn ? user.userId : undefined,
+    verifiedAt: autoVerifyWalkIn ? new Date() : undefined
   });
 
   if (payment.status === "VERIFIED") {
     sale.paidAmount = (sale.paidAmount || 0) + payment.amount;
     recalculateSalePaymentStatus(sale);
     sale.verificationStatus = "VERIFIED";
+    sale.collectedBy = user.userId;
     await sale.save();
+
+    await FinancialLedgerEntry.create({
+      nurseryId: sale.nurseryId || null,
+      entryType: "PAYMENT_VERIFIED",
+      referenceType: "Payment",
+      referenceId: payment._id,
+      debit: 0,
+      credit: payment.amount,
+      balanceImpact: payment.amount,
+      postedBy: user.userId,
+      meta: {
+        saleId: sale._id,
+        saleNumber: sale.saleNumber || null,
+        source: "payment_create_auto_verified"
+      }
+    });
+
+    await upsertStaffAccount({
+      nurseryId: sale.nurseryId || null,
+      staffUserId: user.userId,
+      staffRole: user.role,
+      collectedDelta: payment.amount
+    });
+
+    if (sale.customerSeedBatch && (sale.dueAmount || 0) <= 0) {
+      await CustomerSeedBatch.findByIdAndUpdate(sale.customerSeedBatch, {
+        $set: { status: "CLOSED", updatedBy: user.userId }
+      });
+    }
+
+    if (sale.customer) {
+      await createCustomerNotification({
+        nurseryId: sale.nurseryId,
+        customerId: sale.customer,
+        type: "PAYMENT_ACCEPTED",
+        title: "Payment approved",
+        message: `Payment of ${payment.amount} has been received and verified.`,
+        meta: { saleId: sale._id, paymentId: payment._id }
+      });
+
+      if ((sale.dueAmount || 0) > 0) {
+        await createCustomerNotification({
+          nurseryId: sale.nurseryId,
+          customerId: sale.customer,
+          type: "PAYMENT_DUE",
+          title: "Payment due",
+          message: `Remaining due amount is ${sale.dueAmount}.`,
+          meta: { saleId: sale._id, paymentId: payment._id, dueAmount: sale.dueAmount }
+        });
+      }
+    }
   } else {
     sale.verificationStatus = "PENDING";
     await sale.save();
@@ -106,7 +193,7 @@ const createPaymentRequest = async (payload, user, file) => {
     after: {
       saleId: sale._id,
       amount: payment.amount,
-      mode: payment.mode,
+      mode: normalizedMode,
       status: payment.status
     },
     occurredAt: new Date()
@@ -221,6 +308,14 @@ const verifyPayment = async (paymentId, action, rejectionReason, user, reqMeta =
         session
       );
 
+      if (sale.customerSeedBatch && (sale.dueAmount || 0) <= 0) {
+        await CustomerSeedBatch.findByIdAndUpdate(
+          sale.customerSeedBatch,
+          { $set: { status: "CLOSED", updatedBy: user.userId } },
+          { session }
+        );
+      }
+
       if (sale.customer) {
         await createCustomerNotification({
           nurseryId: sale.nurseryId,
@@ -231,6 +326,18 @@ const verifyPayment = async (paymentId, action, rejectionReason, user, reqMeta =
           meta: { saleId: sale._id, paymentId: payment._id },
           session
         });
+
+        if ((sale.dueAmount || 0) > 0) {
+          await createCustomerNotification({
+            nurseryId: sale.nurseryId,
+            customerId: sale.customer,
+            type: "PAYMENT_DUE",
+            title: "Payment due",
+            message: `Remaining due amount is ${sale.dueAmount}.`,
+            meta: { saleId: sale._id, paymentId: payment._id, dueAmount: sale.dueAmount },
+            session
+          });
+        }
       }
     } else {
       const rejectedPayment = await Payment.findOneAndUpdate(
@@ -308,9 +415,15 @@ const verifyPayment = async (paymentId, action, rejectionReason, user, reqMeta =
 
 const getPayments = async (filters = {}) => {
   const query = {};
-  if (filters.saleId) query.saleId = filters.saleId;
-  if (filters.status) query.status = filters.status;
-  if (filters.nurseryId) query.nurseryId = filters.nurseryId;
+  if (filters.saleId && mongoose.isValidObjectId(filters.saleId)) {
+    query.saleId = filters.saleId;
+  }
+  if (filters.status) {
+    query.status = String(filters.status).toUpperCase();
+  }
+  if (filters.nurseryId && mongoose.isValidObjectId(filters.nurseryId)) {
+    query.nurseryId = filters.nurseryId;
+  }
   const payments = await Payment.find(query).sort({ createdAt: -1 }).populate(PAYMENT_POPULATION);
   return payments.map(normalizePaymentResponse);
 };

@@ -33,8 +33,10 @@ const notificationSchema = new mongoose.Schema(
       type: String,
       enum: [
         "SOWING_UPDATED",
+        "SEED_BATCH_RECEIVED",
         "GERMINATION_UPDATED",
         "PRODUCT_READY",
+        "PAYMENT_DUE",
         "PAYMENT_VERIFICATION_REQUIRED",
         "PAYMENT_ACCEPTED",
         "PAYMENT_REJECTED",

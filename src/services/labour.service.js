@@ -46,6 +46,13 @@ const updateLabour = async (id, payload, user) => {
 };
 
 const deleteLabour = async (id, user) => {
+  if (user?.role === "STAFF") {
+    throw new ApiError(
+      statusCode.FORBIDDEN,
+      "Staff cannot delete labour records. Contact admin if correction is needed."
+    );
+  }
+
   const labour = await Labour.findOneAndDelete({
     _id: id,
     ...(user?.role !== "SUPER_ADMIN" && user?.nurseryId ? { nurseryId: user.nurseryId } : {})

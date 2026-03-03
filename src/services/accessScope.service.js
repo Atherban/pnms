@@ -27,8 +27,28 @@ const getCustomerPurchasedInventoryIds = async (user) => {
   });
 };
 
+const getCustomerLifecycleInventoryIds = async (user) => {
+  const customerProfile = await getCustomerProfile(user);
+  if (!customerProfile) {
+    return [];
+  }
+
+  return PlantInventory.distinct("_id", {
+    customerId: customerProfile._id,
+    ...(customerProfile?.nurseryId ? { nurseryId: customerProfile.nurseryId } : {})
+  });
+};
+
+const getCustomerAccessibleInventoryIds = async (user) => {
+  const [purchased, lifecycle] = await Promise.all([
+    getCustomerPurchasedInventoryIds(user),
+    getCustomerLifecycleInventoryIds(user)
+  ]);
+  return Array.from(new Set([...purchased.map(String), ...lifecycle.map(String)]));
+};
+
 const getCustomerPurchasedPlantTypeIds = async (user) => {
-  const inventoryIds = await getCustomerPurchasedInventoryIds(user);
+  const inventoryIds = await getCustomerAccessibleInventoryIds(user);
   if (!inventoryIds.length) {
     return [];
   }
@@ -41,5 +61,7 @@ const getCustomerPurchasedPlantTypeIds = async (user) => {
 module.exports = {
   getCustomerProfile,
   getCustomerPurchasedInventoryIds,
+  getCustomerLifecycleInventoryIds,
+  getCustomerAccessibleInventoryIds,
   getCustomerPurchasedPlantTypeIds
 };

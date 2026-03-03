@@ -10,7 +10,11 @@ const sowingBatchSchema = new mongoose.Schema(
     seed: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Seed",
-      required: true
+      required: false
+    },
+    customerSeedBatch: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "CustomerSeedBatch"
     },
 
     plantType: {
@@ -31,6 +35,11 @@ const sowingBatchSchema = new mongoose.Schema(
     },
 
     quantityGerminated: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+    quantityDiscarded: {
       type: Number,
       default: 0,
       min: 0
@@ -59,5 +68,19 @@ sowingBatchSchema.virtual("quantityPendingGermination").get(function () {
 
 sowingBatchSchema.set("toJSON", { virtuals: true });
 sowingBatchSchema.set("toObject", { virtuals: true });
+sowingBatchSchema.index({ nurseryId: 1, createdAt: -1 });
+sowingBatchSchema.index({ nurseryId: 1, plantType: 1, createdAt: -1 });
+sowingBatchSchema.index({ customerId: 1, createdAt: -1 });
+sowingBatchSchema.index({ customerSeedBatch: 1, createdAt: -1 });
+
+sowingBatchSchema.pre("validate", function () {
+  const sown = Number(this.quantitySown || 0);
+  const germinated = Number(this.quantityGerminated || 0);
+  const discarded = Number(this.quantityDiscarded || 0);
+
+  if (germinated + discarded > sown) {
+    throw new Error("quantityGerminated + quantityDiscarded cannot exceed quantitySown");
+  }
+});
 
 module.exports = mongoose.model("SowingBatch", sowingBatchSchema);

@@ -15,7 +15,7 @@ const plantInventorySchema = new mongoose.Schema(
 
     sourceType: {
       type: String,
-      enum: ["GERMINATION", "PURCHASED"],
+      enum: ["GERMINATION", "PURCHASED", "CUSTOMER_SEED_BATCH"],
       required: true
     },
 
@@ -33,8 +33,16 @@ const plantInventorySchema = new mongoose.Schema(
 
     sourceModel: {
       type: String,
-      enum: ["Germination", "Expense"],
+      enum: ["Germination", "Expense", "CustomerSeedBatch"],
       required: true
+    },
+    customerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Customer"
+    },
+    customerSeedBatch: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "CustomerSeedBatch"
     },
 
     quantity: {
@@ -87,11 +95,20 @@ plantInventorySchema.pre("validate", function () {
   }
 
   if (!this.source && this.sourceType) {
-    this.source = this.sourceType === "GERMINATION" ? "SOWN" : "PURCHASED";
+    this.source =
+      this.sourceType === "GERMINATION" || this.sourceType === "CUSTOMER_SEED_BATCH"
+        ? "SOWN"
+        : "PURCHASED";
   }
 
   if (!this.sourceModel && this.sourceType) {
-    this.sourceModel = this.sourceType === "GERMINATION" ? "Germination" : "Expense";
+    if (this.sourceType === "GERMINATION") {
+      this.sourceModel = "Germination";
+    } else if (this.sourceType === "CUSTOMER_SEED_BATCH") {
+      this.sourceModel = "CustomerSeedBatch";
+    } else {
+      this.sourceModel = "Expense";
+    }
   }
 
   // Fallback for legacy docs that predate source tracking.
@@ -117,5 +134,9 @@ plantInventorySchema.pre("validate", function () {
 
 plantInventorySchema.set("toJSON", { virtuals: true });
 plantInventorySchema.set("toObject", { virtuals: true });
+plantInventorySchema.index({ nurseryId: 1, customerId: 1, createdAt: -1 });
+plantInventorySchema.index({ nurseryId: 1, customerSeedBatch: 1, createdAt: -1 });
+plantInventorySchema.index({ nurseryId: 1, plantType: 1, status: 1, createdAt: -1 });
+plantInventorySchema.index({ nurseryId: 1, sourceType: 1, createdAt: -1 });
 
 module.exports = mongoose.model("PlantInventory", plantInventorySchema);

@@ -42,7 +42,7 @@ const resolveInventoryUnitCost = (requestedUnitCost, plantType) => {
 };
 
 const createInventoryFromGermination = async (
-  { plantType, quantity, receivedAt, unitCost },
+  { plantType, quantity, receivedAt, unitCost, customerId, customerSeedBatch },
   sourceRef,
   session,
   performedBy,
@@ -61,9 +61,11 @@ const createInventoryFromGermination = async (
       {
         nurseryId: nurseryId || null,
         plantType,
-        sourceType: "GERMINATION",
-        sourceModel: "Germination",
-        sourceRef,
+        sourceType: customerSeedBatch ? "CUSTOMER_SEED_BATCH" : "GERMINATION",
+        sourceModel: customerSeedBatch ? "CustomerSeedBatch" : "Germination",
+        sourceRef: customerSeedBatch || sourceRef,
+        customerId: customerId || undefined,
+        customerSeedBatch: customerSeedBatch || undefined,
         quantity,
         quantityUnit: resolvedQuantityUnit,
         initialQuantity: quantity,
@@ -84,10 +86,12 @@ const createInventoryFromGermination = async (
         quantity,
         quantityUnitSnapshot: resolvedQuantityUnit,
         unitCostSnapshot: resolvedUnitCost,
-        reason: "Inventory created from germination",
+        reason: customerSeedBatch
+          ? "Inventory created from customer seed batch germination"
+          : "Inventory created from germination",
         performedBy,
-        referenceType: "Germination",
-        referenceId: sourceRef
+        referenceType: customerSeedBatch ? "CustomerSeedBatch" : "Germination",
+        referenceId: customerSeedBatch || sourceRef
       }
     ],
     { session }
@@ -173,7 +177,8 @@ const deductInventoryFIFO = async ({ plantTypeId, quantity, nurseryId }, session
     plantType: plantTypeId,
     ...(nurseryId ? { nurseryId } : {}),
     status: "AVAILABLE",
-    quantity: { $gt: 0 }
+    quantity: { $gt: 0 },
+    $or: [{ customerId: { $exists: false } }, { customerId: null }]
   })
     .populate("plantType", "defaultCostPrice sellingPrice")
     .sort({ receivedAt: 1, createdAt: 1 })

@@ -20,7 +20,7 @@ router.post(
 router.get(
   "/",
   authenticate,
-  authorize("SUPER_ADMIN", "NURSERY_ADMIN", "STAFF"),
+  authorize("SUPER_ADMIN", "NURSERY_ADMIN", "STAFF", "CUSTOMER"),
   sowingController.getSowings
 );
 

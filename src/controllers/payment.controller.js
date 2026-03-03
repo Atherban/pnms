@@ -38,9 +38,13 @@ const verifyPayment = async (req, res, next) => {
 
 const getPayments = async (req, res, next) => {
   try {
-    const filters = { ...req.query };
+    const filters = {};
+    if (req.query.saleId) filters.saleId = req.query.saleId;
+    if (req.query.status) filters.status = req.query.status;
     if (req.user.role !== "SUPER_ADMIN" && req.user.nurseryId) {
       filters.nurseryId = req.user.nurseryId;
+    } else if (req.user.role === "SUPER_ADMIN" && req.query.nurseryId) {
+      filters.nurseryId = req.query.nurseryId;
     }
     const payments = await paymentService.getPayments(filters);
     res.status(statusCode.OK).json({

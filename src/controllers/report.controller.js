@@ -17,6 +17,45 @@ const exportReport = async (req, res, next) => {
   }
 };
 
+const getAnalytics = async (req, res, next) => {
+  try {
+    const data = await reportService.getAnalyticsOverview({
+      nurseryId: req.query.nurseryId,
+      startDate: req.query.startDate,
+      endDate: req.query.endDate
+    });
+    res.status(statusCode.OK).json({
+      message: "Report analytics retrieved successfully",
+      data
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const downloadReportByFormat = (format) => async (req, res, next) => {
+  try {
+    const file = await reportService.downloadReportFile(
+      {
+        reportType: req.query.reportType,
+        nurseryId: req.query.nurseryId,
+        startDate: req.query.startDate,
+        endDate: req.query.endDate,
+        staffId: req.query.staffId,
+        plantTypeId: req.query.plantTypeId,
+        customerId: req.query.customerId
+      },
+      req.user,
+      format
+    );
+    res.setHeader("Content-Type", file.mimeType);
+    res.setHeader("Content-Disposition", `attachment; filename=\"${file.fileName}\"`);
+    res.status(statusCode.OK).send(file.buffer);
+  } catch (err) {
+    next(err);
+  }
+};
+
 const downloadReport = async (req, res, next) => {
   try {
     const report = await reportService.getReportJob(req.params.id, req.user);
@@ -34,6 +73,9 @@ const downloadReport = async (req, res, next) => {
 };
 
 module.exports = {
+  getAnalytics,
+  downloadReportPdf: downloadReportByFormat("PDF"),
+  downloadReportExcel: downloadReportByFormat("XLSX"),
   exportReport,
   downloadReport
 };
