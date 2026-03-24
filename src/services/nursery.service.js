@@ -521,13 +521,17 @@ const removePublicContact = async (nurseryId, contactId, user) => {
     ? nursery.settings.contactDetails
     : [];
 
-  const contact = nursery.settings.contactDetails.id(contactId);
+  const existingContacts = nursery.settings.contactDetails;
+  const contact = existingContacts.id(contactId);
   if (!contact) {
     throw new ApiError(statusCode.NOT_FOUND, "Public contact not found");
   }
 
   const qrFileName = contact.qrImage;
-  contact.deleteOne();
+  nursery.settings.contactDetails = existingContacts.filter(
+    (item) => String(item?._id || item?.id || "") !== String(contactId)
+  );
+  nursery.markModified("settings.contactDetails");
   nursery.updatedBy = user.userId;
   await nursery.save();
 

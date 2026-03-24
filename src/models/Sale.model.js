@@ -19,6 +19,26 @@ const saleSchema = new mongoose.Schema(
           required: true
         },
 
+        inventoryLabel: {
+          type: String
+        },
+
+        plantTypeName: {
+          type: String
+        },
+
+        plantCategory: {
+          type: String
+        },
+
+        plantVariety: {
+          type: String
+        },
+
+        plantImage: {
+          type: String
+        },
+
         quantity: {
           type: Number,
           required: true,
