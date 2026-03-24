@@ -431,5 +431,5 @@ const getPayments = async (filters = {}) => {
 module.exports = {
   createPaymentRequest,
   verifyPayment,
-  getPayments
+  getPayments,
 };
