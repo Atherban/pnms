@@ -20,12 +20,39 @@ const exportReport = async (req, res, next) => {
 const getAnalytics = async (req, res, next) => {
   try {
     const data = await reportService.getAnalyticsOverview({
+      user: req.user,
       nurseryId: req.query.nurseryId,
       startDate: req.query.startDate,
-      endDate: req.query.endDate
+      endDate: req.query.endDate,
+      staffId: req.query.staffId,
+      plantTypeId: req.query.plantTypeId,
+      customerId: req.query.customerId
     });
     res.status(statusCode.OK).json({
       message: "Report analytics retrieved successfully",
+      data
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getStructuredReport = async (req, res, next) => {
+  try {
+    const data = await reportService.getStructuredReportData(
+      {
+        reportType: req.query.reportType,
+        nurseryId: req.query.nurseryId,
+        startDate: req.query.startDate,
+        endDate: req.query.endDate,
+        staffId: req.query.staffId,
+        plantTypeId: req.query.plantTypeId,
+        customerId: req.query.customerId
+      },
+      req.user
+    );
+    res.status(statusCode.OK).json({
+      message: "Structured report data retrieved successfully",
       data
     });
   } catch (err) {
@@ -74,6 +101,7 @@ const downloadReport = async (req, res, next) => {
 
 module.exports = {
   getAnalytics,
+  getStructuredReport,
   downloadReportPdf: downloadReportByFormat("PDF"),
   downloadReportExcel: downloadReportByFormat("XLSX"),
   exportReport,

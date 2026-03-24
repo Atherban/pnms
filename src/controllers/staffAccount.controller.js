@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const StaffAccount = require("../models/StaffAccount.model");
 const Sale = require("../models/Sale.model");
 const Expense = require("../models/Expense.model");
+const User = require("../models/User.model");
 
 const toNumber = (value) => {
   const parsed = Number(value || 0);
@@ -162,6 +163,88 @@ const getStaffAccounts = async (req, res, next) => {
   }
 };
 
+const getStaffPerformance = async (req, res, next) => {
+  try {
+    const query = { isVoided: { $ne: true } };
+    if (req.user.nurseryId) {
+      query.nurseryId = req.user.nurseryId;
+    } else if (
+      req.user.role === "SUPER_ADMIN" &&
+      req.query.nurseryId &&
+      mongoose.isValidObjectId(req.query.nurseryId)
+    ) {
+      query.nurseryId = req.query.nurseryId;
+    }
+
+    if (req.query.staffUserId && mongoose.isValidObjectId(req.query.staffUserId)) {
+      query.performedBy = req.query.staffUserId;
+    }
+
+    if (req.query.startDate || req.query.endDate) {
+      const dateRange = {};
+      if (req.query.startDate) dateRange.$gte = new Date(req.query.startDate);
+      if (req.query.endDate) dateRange.$lte = new Date(req.query.endDate);
+      query.$or = [{ saleDate: dateRange }, { createdAt: dateRange }];
+    }
+
+    const sales = await Sale.find(query)
+      .populate("performedBy", "name email role")
+      .select("performedBy roleAtTime grossAmount totalAmount discountAmount netAmount paidAmount dueAmount saleDate createdAt");
+
+    const staffIds = [
+      ...new Set(
+        sales
+          .map((sale) => String(sale?.performedBy?._id || sale?.performedBy || ""))
+          .filter(Boolean)
+      )
+    ];
+    const staffUsers = staffIds.length
+      ? await User.find({ _id: { $in: staffIds } }).select("_id name email role")
+      : [];
+    const userMap = new Map(staffUsers.map((user) => [String(user._id), user]));
+
+    const performanceMap = new Map();
+    for (const sale of sales) {
+      const performerId = String(sale?.performedBy?._id || sale?.performedBy || "");
+      if (!performerId) continue;
+
+      const performer = typeof sale?.performedBy === "object" ? sale.performedBy : userMap.get(performerId);
+      const performerRole = String(
+        performer?.role || sale?.roleAtTime || ""
+      ).toUpperCase();
+      if (performerRole !== "STAFF") continue;
+
+      const finance = normalizeSaleFinancials(sale);
+      if (!performanceMap.has(performerId)) {
+        performanceMap.set(performerId, {
+          staffId: performerId,
+          staffName: performer?.name || "Unknown Staff",
+          staffRole: performerRole,
+          staffEmail: performer?.email || null,
+          salesCount: 0,
+          revenue: 0,
+          collectedAmount: 0,
+          dueAmount: 0
+        });
+      }
+
+      const row = performanceMap.get(performerId);
+      row.salesCount += 1;
+      row.revenue += finance.revenue;
+      row.collectedAmount += finance.paid;
+      row.dueAmount += finance.due;
+    }
+
+    res.status(statusCode.OK).json({
+      message: "Staff performance retrieved successfully",
+      data: Array.from(performanceMap.values()).sort((a, b) => b.revenue - a.revenue)
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
-  getStaffAccounts
+  getStaffAccounts,
+  getStaffPerformance
 };

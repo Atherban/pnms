@@ -24,6 +24,10 @@ const nurserySchema = new mongoose.Schema(
       enum: ["ACTIVE", "SUSPENDED"],
       default: "ACTIVE"
     },
+    phoneNumber: {
+      type: String,
+      trim: true
+    },
     settings: {
       currency: {
         type: String,
@@ -48,6 +52,9 @@ const nurserySchema = new mongoose.Schema(
         instagram: String,
         youtube: String,
         website: String
+      },
+      branding: {
+        logoImage: String
       },
       contactDetails: [
         {

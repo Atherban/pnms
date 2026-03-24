@@ -23,11 +23,13 @@ const normalizeNurserySettingsResponse = (nursery, req) => {
   const output = { ...value };
   output.settings = { ...(value.settings || {}) };
   output.settings.paymentConfig = { ...(output.settings.paymentConfig || {}) };
+  output.settings.branding = { ...(output.settings.branding || {}) };
   output.settings.contactDetails = Array.isArray(output.settings.contactDetails)
     ? output.settings.contactDetails.map((contact) => ({ ...contact }))
     : [];
 
   output.settings.paymentConfig.qrImageUrl = buildFileUrl(output.settings.paymentConfig.qrImage, req);
+  output.settings.branding.logoImageUrl = buildFileUrl(output.settings.branding.logoImage, req);
   output.settings.contactDetails = output.settings.contactDetails.map((contact) => ({
     ...contact,
     qrImageUrl: buildFileUrl(contact.qrImage, req)

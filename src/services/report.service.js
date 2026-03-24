@@ -10,6 +10,7 @@ const Seed = require("../models/Seed.model");
 const Customer = require("../models/Customer.model");
 const Nursery = require("../models/Nursery.model");
 const ReportJob = require("../models/ReportJob.model");
+const User = require("../models/User.model");
 const { buildSimplePdfBuffer } = require("../utils/pdfGenerator");
 const { buildExcelBuffer } = require("../utils/excelGenerator");
 
@@ -40,7 +41,7 @@ const toMoney = (value) => {
   return Number.isFinite(num) ? Number(num.toFixed(2)) : 0;
 };
 
-const getBaseFilters = ({ nurseryId, startDate, endDate }) => {
+const getBaseFilters = ({ nurseryId, startDate, endDate, staffId, customerId, plantTypeId }) => {
   const dateRange = buildDateRange(startDate, endDate);
 
   const saleFilter = { isVoided: { $ne: true } };
@@ -65,6 +66,22 @@ const getBaseFilters = ({ nurseryId, startDate, endDate }) => {
     customerFilter.nurseryId = nurseryId;
   }
 
+  if (staffId) {
+    saleFilter.performedBy = staffId;
+    paymentFilter.verifiedBy = staffId;
+    expenseFilter.purchasedBy = staffId;
+    inventoryTxFilter.performedBy = staffId;
+    sowingFilter.performedBy = staffId;
+  }
+
+  if (customerId) {
+    saleFilter.customer = customerId;
+    paymentFilter.customerId = customerId;
+    customerFilter._id = customerId;
+    inventoryFilter.customerId = customerId;
+    sowingFilter.customerId = customerId;
+  }
+
   if (dateRange) {
     saleFilter.$or = [{ saleDate: dateRange }, { createdAt: dateRange }];
     paymentFilter.createdAt = dateRange;
@@ -74,6 +91,12 @@ const getBaseFilters = ({ nurseryId, startDate, endDate }) => {
     sowingFilter.createdAt = dateRange;
     seedFilter.createdAt = dateRange;
     customerFilter.createdAt = dateRange;
+  }
+
+  if (plantTypeId) {
+    inventoryFilter.plantType = plantTypeId;
+    sowingFilter.plantType = plantTypeId;
+    seedFilter.plantType = plantTypeId;
   }
 
   return {
@@ -89,7 +112,8 @@ const getBaseFilters = ({ nurseryId, startDate, endDate }) => {
   };
 };
 
-const getAnalyticsOverview = async ({ nurseryId, startDate, endDate }) => {
+const getAnalyticsOverview = async ({ user, nurseryId, startDate, endDate, staffId, customerId, plantTypeId }) => {
+  const scopedNurseryId = user ? applyNurseryScope(user, nurseryId) : (nurseryId || null);
   const {
     saleFilter,
     paymentFilter,
@@ -100,7 +124,14 @@ const getAnalyticsOverview = async ({ nurseryId, startDate, endDate }) => {
     sowingFilter,
     seedFilter,
     customerFilter
-  } = getBaseFilters({ nurseryId, startDate, endDate });
+  } = getBaseFilters({
+    nurseryId: scopedNurseryId,
+    startDate,
+    endDate,
+    staffId,
+    customerId,
+    plantTypeId
+  });
 
   const [
     saleTotals,
@@ -122,6 +153,7 @@ const getAnalyticsOverview = async ({ nurseryId, startDate, endDate }) => {
         $group: {
           _id: null,
           totalSalesValue: { $sum: { $ifNull: ["$netAmount", "$totalAmount"] } },
+          totalPaid: { $sum: { $ifNull: ["$paidAmount", 0] } },
           totalDue: { $sum: { $ifNull: ["$dueAmount", 0] } },
           totalProfit: { $sum: { $ifNull: ["$totalProfit", 0] } },
           totalSoldPlants: {
@@ -227,7 +259,10 @@ const getAnalyticsOverview = async ({ nurseryId, startDate, endDate }) => {
       { $match: expenseFilter },
       { $group: { _id: "$purchasedBy", expensesRecorded: { $sum: { $ifNull: ["$amount", 0] } } } }
     ]),
-    StaffAccount.find(nurseryId ? { nurseryId } : {})
+    StaffAccount.find({
+      ...(scopedNurseryId ? { nurseryId: scopedNurseryId } : {}),
+      ...(staffId ? { staffUserId: staffId } : {})
+    })
       .populate("staffUserId", "name")
       .sort({ periodEnd: -1 })
       .limit(100)
@@ -241,33 +276,73 @@ const getAnalyticsOverview = async ({ nurseryId, startDate, endDate }) => {
   const inventoryTxMetrics = inventoryTxTotals[0] || {};
   const seedPurchaseMetrics = lifecycleTotals[0][0] || {};
   const sowingMetrics = lifecycleTotals[1][0] || {};
+  const staffIds = [
+    ...new Set(
+      []
+        .concat(staffSales.map((row) => String(row?._id || "")))
+        .concat(staffCollections.map((row) => String(row?._id || "")))
+        .concat(staffExpenses.map((row) => String(row?._id || "")))
+        .concat(staffAccountRows.map((row) => String(row?.staffUserId?._id || row?.staffUserId || "")))
+        .filter(Boolean)
+    )
+  ];
+  const staffUsers = staffIds.length
+    ? await User.find({ _id: { $in: staffIds } }).select("_id name")
+    : [];
+
   const customerDueCount = customerTotals[1][0]?.count || 0;
   const customerCompletedCount = customerTotals[2][0]?.count || 0;
+  const staffNameById = new Map(
+    (staffUsers || []).map((user) => [String(user._id), user.name || "Unknown Staff"])
+  );
 
   const staffMap = new Map();
   for (const row of staffSales) {
     const key = String(row._id || "");
     if (!key) continue;
-    staffMap.set(key, { staffUserId: key, salesMade: row.salesMade || 0, collections: 0, expensesRecorded: 0 });
+    staffMap.set(key, {
+      staffUserId: key,
+      staffName: staffNameById.get(key),
+      salesMade: row.salesMade || 0,
+      collections: 0,
+      expensesRecorded: 0
+    });
   }
   for (const row of staffCollections) {
     const key = String(row._id || "");
     if (!key) continue;
-    const existing = staffMap.get(key) || { staffUserId: key, salesMade: 0, collections: 0, expensesRecorded: 0 };
+    const existing = staffMap.get(key) || {
+      staffUserId: key,
+      staffName: staffNameById.get(key),
+      salesMade: 0,
+      collections: 0,
+      expensesRecorded: 0
+    };
+    existing.staffName = existing.staffName || staffNameById.get(key);
     existing.collections = toMoney(row.collections);
     staffMap.set(key, existing);
   }
   for (const row of staffExpenses) {
     const key = String(row._id || "");
     if (!key) continue;
-    const existing = staffMap.get(key) || { staffUserId: key, salesMade: 0, collections: 0, expensesRecorded: 0 };
+    const existing = staffMap.get(key) || {
+      staffUserId: key,
+      staffName: staffNameById.get(key),
+      salesMade: 0,
+      collections: 0,
+      expensesRecorded: 0
+    };
+    existing.staffName = existing.staffName || staffNameById.get(key);
     existing.expensesRecorded = toMoney(row.expensesRecorded);
     staffMap.set(key, existing);
   }
 
   const staffFromAccounts = staffAccountRows.map((row) => ({
     staffUserId: String(row.staffUserId?._id || row.staffUserId || ""),
-    staffName: row.staffUserId?.name || "Unknown Staff",
+    staffName:
+      row.staffUserId?.name ||
+      staffNameById.get(String(row.staffUserId?._id || row.staffUserId || "")) ||
+      "Unknown Staff",
     salesMade: row.totalSalesAmount || 0,
     collections: row.totalCollectedAmount || 0,
     expensesRecorded: row.totalExpensesRecorded || 0
@@ -278,11 +353,11 @@ const getAnalyticsOverview = async ({ nurseryId, startDate, endDate }) => {
   );
 
   const totalSalesValue = toMoney(saleMetrics.totalSalesValue);
-  const totalPaid = toMoney(paymentMetrics.totalPaid);
-  const totalDue = toMoney(totalSalesValue - totalPaid);
+  const totalPaid = toMoney(saleMetrics.totalPaid || paymentMetrics.totalPaid);
+  const totalDue = toMoney(saleMetrics.totalDue);
   const totalExpenses = toMoney(expenseMetrics.totalExpenses);
   const refundedAmount = toMoney(returnMetrics.totalRefunded);
-  const profit = toMoney(totalPaid - totalExpenses);
+  const profit = toMoney((saleMetrics.totalProfit || 0) - totalExpenses - refundedAmount);
 
   return {
     sales: {
@@ -414,7 +489,8 @@ const buildReportTables = async ({ nurseryId, startDate, endDate, staffId, plant
 
   const inventorySummaryTable = Array.from(inventorySummaryMap.values());
 
-  const staffAnalytics = await getAnalyticsOverview({ nurseryId, startDate, endDate });
+  const overview = await getAnalyticsOverview({ nurseryId, startDate, endDate });
+  const staffAnalytics = overview;
   const staffPerformanceTable = (staffAnalytics.staff.analytics || []).map((row) => ({
     staff: row.staffName || row.staffUserId,
     salesCount: Number(row.salesMade || 0),
@@ -423,6 +499,7 @@ const buildReportTables = async ({ nurseryId, startDate, endDate, staffId, plant
   }));
 
   return {
+    overview,
     salesTable,
     paymentsTable,
     inventorySummaryTable,
@@ -432,11 +509,12 @@ const buildReportTables = async ({ nurseryId, startDate, endDate, staffId, plant
 
 const buildReportMeta = async ({ nurseryId, reportType, startDate, endDate, user }) => {
   const nursery = nurseryId ? await Nursery.findById(nurseryId).select("name") : null;
+  const actor = user?.userId ? await User.findById(user.userId).select("name") : null;
   return [
     { label: "Nursery", value: nursery?.name || "All Nurseries" },
     { label: "Report Type", value: reportType || "SUMMARY" },
     { label: "Date Range", value: `${startDate || "Start"} to ${endDate || "Now"}` },
-    { label: "Generated By", value: user?.userId || "System" }
+    { label: "Generated By", value: actor?.name || user?.userId || "System" }
   ];
 };
 
@@ -445,6 +523,7 @@ const generateReportFile = async ({ format, metaRows, tables }) => {
     const buffer = await buildSimplePdfBuffer({
       title: "PNMS Report",
       metaRows,
+      overview: tables.overview,
       sections: [
         { title: "Sales", headers: ["saleId", "customer", "items", "total", "paid", "due", "status"], rows: tables.salesTable },
         { title: "Payments", headers: ["paymentId", "sale", "amount", "mode", "status", "date"], rows: tables.paymentsTable },
@@ -513,6 +592,38 @@ const generateReportFile = async ({ format, metaRows, tables }) => {
     buffer: Buffer.from(buffer),
     mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     extension: "xlsx"
+  };
+};
+
+const getStructuredReportData = async (params, user) => {
+  const scopedNurseryId = applyNurseryScope(user, params.nurseryId);
+  const reportType = REPORT_TYPES.has(params.reportType) ? params.reportType : "SALES";
+  const tables = await buildReportTables({
+    nurseryId: scopedNurseryId,
+    startDate: params.startDate,
+    endDate: params.endDate,
+    staffId: params.staffId,
+    plantTypeId: params.plantTypeId,
+    customerId: params.customerId
+  });
+  const metaRows = await buildReportMeta({
+    nurseryId: scopedNurseryId,
+    reportType,
+    startDate: params.startDate,
+    endDate: params.endDate,
+    user
+  });
+
+  return {
+    reportType,
+    metaRows,
+    overview: tables.overview,
+    tables: {
+      sales: tables.salesTable,
+      payments: tables.paymentsTable,
+      inventory: tables.inventorySummaryTable,
+      staff: tables.staffPerformanceTable
+    }
   };
 };
 
@@ -597,5 +708,6 @@ module.exports = {
   exportReport,
   getReportJob,
   getAnalyticsOverview,
+  getStructuredReportData,
   downloadReportFile
 };

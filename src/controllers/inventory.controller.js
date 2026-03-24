@@ -8,6 +8,9 @@ const {
 const {
   getCustomerAccessibleInventoryIds
 } = require("../services/accessScope.service");
+const {
+  listCustomerMarketplaceProducts
+} = require("../services/productFeed.service");
 
 const INVENTORY_POPULATION = [
   {
@@ -132,8 +135,22 @@ const getInventoryById = async (req, res, next) => {
   }
 };
 
+const getCustomerMarketplaceProducts = async (req, res, next) => {
+  try {
+    const products = await listCustomerMarketplaceProducts(req.user);
+
+    res.status(statusCode.OK).json({
+      message: "Marketplace products retrieved successfully",
+      data: products
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   createInventory,
   getInventory,
-  getInventoryById
+  getInventoryById,
+  getCustomerMarketplaceProducts
 };

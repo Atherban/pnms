@@ -6,6 +6,13 @@ const authenticate = require("../middlewares/auth.middleware");
 const authorize = require("../middlewares/rbac.middleware");
 
 router.get(
+  "/performance",
+  authenticate,
+  authorize("SUPER_ADMIN", "NURSERY_ADMIN"),
+  staffAccountController.getStaffPerformance
+);
+
+router.get(
   "/",
   authenticate,
   authorize("SUPER_ADMIN", "NURSERY_ADMIN"),

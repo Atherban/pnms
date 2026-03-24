@@ -77,6 +77,15 @@ router.post(
 );
 
 router.post(
+  "/:id/logo-image",
+  authenticate,
+  authorize("SUPER_ADMIN", "NURSERY_ADMIN"),
+  validate(objectIdSchema, "params"),
+  upload.single("image"),
+  nurseryController.uploadNurseryLogo
+);
+
+router.post(
   "/:id/public-contacts",
   authenticate,
   authorize("SUPER_ADMIN", "NURSERY_ADMIN"),

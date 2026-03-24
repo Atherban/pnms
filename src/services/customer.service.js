@@ -115,11 +115,25 @@ const createCustomer = async (payload, user) => {
     throw new ApiError(statusCode.CONFLICT, "Customer already exists");
   }
 
-  const linkedCustomerUser = await User.findOne({
+  let linkedCustomerUser = await User.findOne({
     phoneNumber: normalizedMobile,
     role: "CUSTOMER",
     ...(user?.nurseryId ? { nurseryId: user.nurseryId } : {})
   }).select("_id");
+
+  if (!linkedCustomerUser && normalizedMobile) {
+    linkedCustomerUser = await User.create({
+      nurseryId: user?.nurseryId || null,
+      name: payload.name || "Customer",
+      phoneNumber: normalizedMobile,
+      password: String(process.env.DEFAULT_USER_PASSWORD || "12345").trim(),
+      role: "CUSTOMER",
+      isActive: true,
+      mustChangePassword: true,
+      createdBy: user?.userId || undefined,
+      updatedBy: user?.userId || undefined
+    });
+  }
 
   return Customer.create({
     userId: linkedCustomerUser?._id || payload.userId || undefined,
