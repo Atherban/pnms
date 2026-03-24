@@ -132,6 +132,47 @@ const attachReturnsToSales = async (sales) => {
   });
 };
 
+const enrichSaleItemSnapshots = (sale) => {
+  const value = sale && typeof sale.toObject === "function" ? sale.toObject() : sale;
+  if (!value || typeof value !== "object") return value;
+
+  const items = Array.isArray(value.items)
+    ? value.items.map((item) => {
+        const inventoryObj = item?.inventory && typeof item.inventory === "object" ? item.inventory : null;
+        const plantTypeObj = inventoryObj?.plantType && typeof inventoryObj.plantType === "object"
+          ? inventoryObj.plantType
+          : null;
+        const primaryImage = Array.isArray(plantTypeObj?.images)
+          ? plantTypeObj.images.find((img) => img?.fileName || img?.url || img?.imageUrl)
+          : null;
+        const plantTypeName = item?.plantTypeName || plantTypeObj?.name;
+        const plantVariety = item?.plantVariety || plantTypeObj?.variety;
+
+        return {
+          ...item,
+          inventoryLabel:
+            item?.inventoryLabel ||
+            [plantTypeName, plantVariety].filter(Boolean).join(" · ") ||
+            undefined,
+          plantTypeName: plantTypeName || undefined,
+          plantCategory: item?.plantCategory || plantTypeObj?.category || undefined,
+          plantVariety: plantVariety || undefined,
+          plantImage:
+            item?.plantImage ||
+            primaryImage?.fileName ||
+            primaryImage?.url ||
+            primaryImage?.imageUrl ||
+            undefined
+        };
+      })
+    : [];
+
+  return {
+    ...value,
+    items
+  };
+};
+
 const createSale = async (data, user) => {
   if (user.role !== "SUPER_ADMIN" && !user.nurseryId) {
     throw new ApiError(statusCode.BAD_REQUEST, "User is not assigned to a nursery");
@@ -260,6 +301,20 @@ const createSale = async (data, user) => {
           }
         }
 
+        const plantTypeSnapshot = requestedInventory.plantType || {};
+        const plantTypeName = String(plantTypeSnapshot?.name || "").trim();
+        const plantCategory = String(plantTypeSnapshot?.category || "").trim();
+        const plantVariety = String(plantTypeSnapshot?.variety || "").trim();
+        const primaryImage = Array.isArray(plantTypeSnapshot?.images)
+          ? plantTypeSnapshot.images.find((img) => img?.fileName || img?.url || img?.imageUrl)
+          : null;
+        const plantImage =
+          primaryImage?.fileName ||
+          primaryImage?.url ||
+          primaryImage?.imageUrl ||
+          null;
+        const inventoryLabel = [plantTypeName, plantVariety].filter(Boolean).join(" · ") || plantTypeName;
+
         const priceAtSale = requestedInventory.plantType.sellingPrice;
         if (priceAtSale === undefined || priceAtSale === null) {
           throw new ApiError(
@@ -324,6 +379,11 @@ const createSale = async (data, user) => {
 
         saleItems.push({
           inventory: requestedInventory._id,
+          inventoryLabel: inventoryLabel || undefined,
+          plantTypeName: plantTypeName || undefined,
+          plantCategory: plantCategory || undefined,
+          plantVariety: plantVariety || undefined,
+          plantImage: plantImage || undefined,
           quantity: item.quantity,
           priceAtSale,
           costAtSale: itemCost,
@@ -524,7 +584,7 @@ const createSale = async (data, user) => {
 
     const createdSale = await Sale.findById(sale._id).populate(SALE_POPULATION);
     const [saleWithPayments] = await attachPaymentsToSales([createdSale]);
-    return normalizeSaleCustomer(saleWithPayments);
+    return normalizeSaleCustomer(enrichSaleItemSnapshots(saleWithPayments));
   } catch (error) {
     await session.abortTransaction();
     session.endSession();
@@ -554,7 +614,7 @@ const getAllSales = async (user) => {
     .populate(SALE_POPULATION);
   const salesWithPayments = await attachPaymentsToSales(sales);
   const salesWithReturns = await attachReturnsToSales(salesWithPayments);
-  return salesWithReturns.map(normalizeSaleCustomer);
+  return salesWithReturns.map((sale) => normalizeSaleCustomer(enrichSaleItemSnapshots(sale)));
 };
 
 const getSaleById = async (saleId, user) => {
@@ -585,7 +645,7 @@ const getSaleById = async (saleId, user) => {
 
   const [saleWithPayments] = await attachPaymentsToSales([sale]);
   const [saleWithReturns] = await attachReturnsToSales([saleWithPayments]);
-  return normalizeSaleCustomer(saleWithReturns);
+  return normalizeSaleCustomer(enrichSaleItemSnapshots(saleWithReturns));
 };
 
 module.exports = {
