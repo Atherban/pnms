@@ -93,6 +93,24 @@ const uploadNurseryPaymentQr = async (req, res, next) => {
   }
 };
 
+const uploadNurseryLogo = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(statusCode.BAD_REQUEST).json({ message: "Image file is required" });
+    }
+    const nursery = await nurseryService.uploadBrandLogoImage(req.params.id, req.file, req.user);
+    res.status(statusCode.OK).json({
+      message: "Nursery logo uploaded successfully",
+      data: normalizeNurserySettingsResponse(nursery, req)
+    });
+  } catch (err) {
+    if (req.file?.filename) {
+      await removeUploadedFile(req.file.filename);
+    }
+    next(err);
+  }
+};
+
 const addPublicContact = async (req, res, next) => {
   try {
     const nursery = await nurseryService.addPublicContact(req.params.id, req.body, req.file, req.user);
@@ -209,6 +227,7 @@ module.exports = {
   deleteNursery,
   updateNurseryPaymentConfig,
   uploadNurseryPaymentQr,
+  uploadNurseryLogo,
   addPublicContact,
   updatePublicContact,
   uploadPublicContactQr,

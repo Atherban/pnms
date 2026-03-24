@@ -1,16 +1,26 @@
 {
-  "name": "backend",
+  "name": "pnms-backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "PNMS backend API",
+  "private": true,
+  "main": "src/server.js",
   "scripts": {
+    "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "test": "node --test tests/*.test.js"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "pnms",
+    "backend",
+    "express",
+    "mongodb"
+  ],
+  "author": "PNMS",
   "license": "ISC",
   "type": "commonjs",
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.2.3",

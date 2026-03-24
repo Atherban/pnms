@@ -439,6 +439,23 @@ const uploadPaymentQrImage = async (nurseryId, file, user) => {
   return nursery;
 };
 
+const uploadBrandLogoImage = async (nurseryId, file, user) => {
+  const nursery = await ensurePrimaryAdminConfigAccess(nurseryId, user);
+  nursery.settings = nursery.settings || {};
+  nursery.settings.branding = nursery.settings.branding || {};
+
+  const previousFileName = nursery.settings.branding.logoImage;
+  nursery.settings.branding.logoImage = file.filename;
+  nursery.updatedBy = user.userId;
+  await nursery.save();
+
+  if (previousFileName && previousFileName !== file.filename) {
+    await removeUploadedFile(previousFileName);
+  }
+
+  return nursery;
+};
+
 const addPublicContact = async (nurseryId, payload, file, user) => {
   const nursery = await ensurePrimaryAdminConfigAccess(nurseryId, user);
   nursery.settings = nursery.settings || {};
@@ -532,6 +549,7 @@ module.exports = {
   removeAdmin,
   updatePaymentConfig,
   uploadPaymentQrImage,
+  uploadBrandLogoImage,
   addPublicContact,
   updatePublicContact,
   removePublicContact

@@ -26,6 +26,13 @@ router.get(
 );
 
 router.get(
+  "/marketplace/products",
+  authenticate,
+  authorize("CUSTOMER"),
+  inventoryController.getCustomerMarketplaceProducts
+);
+
+router.get(
   "/:id",
   authenticate,
   authorize("SUPER_ADMIN", "NURSERY_ADMIN", "STAFF", "CUSTOMER"),

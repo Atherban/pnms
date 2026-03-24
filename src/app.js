@@ -28,6 +28,7 @@ const staffAccountRoutes = require("./routes/staffAccount.routes");
 const notificationRoutes = require("./routes/notification.routes");
 const auditLogRoutes = require("./routes/auditLog.routes");
 const maintenanceRoutes = require("./routes/maintenance.routes");
+const productFeedRoutes = require("./routes/productFeed.routes");
 
 
 const app = express();
@@ -86,6 +87,7 @@ app.use("/api/staff-accounts", staffAccountRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/audit-logs", auditLogRoutes);
 app.use("/api/maintenance", maintenanceRoutes);
+app.use("/api/product-feed", productFeedRoutes);
 
 
 // serve uploaded files

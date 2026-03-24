@@ -25,6 +25,14 @@ router.get(
 );
 
 router.get(
+  "/structured",
+  authenticate,
+  authorize("SUPER_ADMIN", "NURSERY_ADMIN"),
+  validate(analyticsQuerySchema, "query"),
+  reportController.getStructuredReport
+);
+
+router.get(
   "/download/pdf",
   authenticate,
   authorize("SUPER_ADMIN", "NURSERY_ADMIN"),

@@ -1,5 +1,16 @@
 const escapePdfText = (value) => String(value ?? "").replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
 
+const formatValue = (value) => {
+  if (value === null || value === undefined || value === "") return "-";
+  if (typeof value === "number") return Number.isInteger(value) ? String(value) : value.toFixed(2);
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  const asDate = new Date(value);
+  if (typeof value === "string" && !Number.isNaN(asDate.getTime()) && value.includes("T")) {
+    return asDate.toISOString().slice(0, 10);
+  }
+  return String(value);
+};
+
 const buildMinimalPdfBuffer = ({ title, metaRows = [], sections = [] }) => {
   const lines = [];
   lines.push(title || "Report");
@@ -56,7 +67,7 @@ const buildMinimalPdfBuffer = ({ title, metaRows = [], sections = [] }) => {
   return Buffer.from(pdf, "utf8");
 };
 
-const buildSimplePdfBuffer = async ({ title, metaRows = [], sections = [] }) => {
+const buildSimplePdfBuffer = async ({ title, metaRows = [], overview = null, sections = [] }) => {
   let PDFDocument;
   try {
     PDFDocument = require("pdfkit");
@@ -64,7 +75,7 @@ const buildSimplePdfBuffer = async ({ title, metaRows = [], sections = [] }) => 
     return buildMinimalPdfBuffer({ title, metaRows, sections });
   }
 
-  const doc = new PDFDocument({ margin: 40, size: "A4" });
+  const doc = new PDFDocument({ margin: 36, size: "A4", bufferPages: true });
   const chunks = [];
   doc.on("data", (chunk) => chunks.push(chunk));
 
@@ -72,34 +83,156 @@ const buildSimplePdfBuffer = async ({ title, metaRows = [], sections = [] }) => 
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
 
-    doc.fontSize(18).text(title || "Report", { underline: true });
-    doc.moveDown(0.5);
-    doc.fontSize(10);
+    const pageWidth = doc.page.width;
+    const pageHeight = doc.page.height;
+    const left = doc.page.margins.left;
+    const right = pageWidth - doc.page.margins.right;
+    const contentWidth = right - left;
 
-    for (const row of metaRows) {
-      doc.text(`${row.label}: ${row.value ?? "-"}`);
-    }
+    const ensureSpace = (heightNeeded = 40) => {
+      if (doc.y + heightNeeded > pageHeight - doc.page.margins.bottom) {
+        doc.addPage();
+      }
+    };
 
-    doc.moveDown(0.8);
-    for (const section of sections) {
-      doc.fontSize(13).text(section.title || "Section");
-      doc.moveDown(0.3);
+    const drawSectionTitle = (text) => {
+      ensureSpace(28);
+      doc.moveDown(0.2);
+      doc.font("Helvetica-Bold").fontSize(13).fillColor("#0F172A").text(text, left, doc.y);
+      doc.moveTo(left, doc.y + 4).lineTo(right, doc.y + 4).strokeColor("#D7E3F1").stroke();
+      doc.moveDown(0.4);
+    };
 
+    const drawMetaGrid = () => {
+      const boxGap = 12;
+      const boxWidth = (contentWidth - boxGap) / 2;
+      const boxHeight = 54;
+      let x = left;
+      let y = doc.y;
+
+      metaRows.forEach((row, index) => {
+        if (index > 0 && index % 2 === 0) {
+          x = left;
+          y += boxHeight + 10;
+        }
+        ensureSpace(boxHeight + 10);
+        doc.roundedRect(x, y, boxWidth, boxHeight, 10).fillAndStroke("#F8FBFF", "#D6E4F0");
+        doc.fillColor("#64748B").font("Helvetica").fontSize(9).text(row.label || "-", x + 12, y + 10, { width: boxWidth - 24 });
+        doc.fillColor("#0F172A").font("Helvetica-Bold").fontSize(12).text(formatValue(row.value), x + 12, y + 24, {
+          width: boxWidth - 24
+        });
+        x += boxWidth + boxGap;
+      });
+
+      doc.y = y + boxHeight + 8;
+    };
+
+    const summaryCards = overview
+      ? [
+          { label: "Total Sales", value: formatValue(overview.sales?.totalSales), tone: "#1D4ED8" },
+          { label: "Collected", value: formatValue(overview.sales?.totalPaid), tone: "#047857" },
+          { label: "Due", value: formatValue(overview.sales?.totalDue), tone: "#B91C1C" },
+          { label: "Profit", value: formatValue(overview.sales?.profit), tone: "#7C3AED" }
+        ]
+      : [];
+
+    const drawSummaryCards = () => {
+      if (!summaryCards.length) return;
+      const gap = 10;
+      const cardWidth = (contentWidth - gap * 3) / 4;
+      const cardHeight = 72;
+      ensureSpace(cardHeight + 8);
+      summaryCards.forEach((card, index) => {
+        const x = left + index * (cardWidth + gap);
+        const y = doc.y;
+        doc.roundedRect(x, y, cardWidth, cardHeight, 12).fillAndStroke("#FFFFFF", "#D6E4F0");
+        doc.rect(x, y, 6, cardHeight).fill(card.tone);
+        doc.fillColor("#64748B").font("Helvetica").fontSize(9).text(card.label, x + 14, y + 14, { width: cardWidth - 24 });
+        doc.fillColor("#0F172A").font("Helvetica-Bold").fontSize(16).text(card.value, x + 14, y + 32, { width: cardWidth - 24 });
+      });
+      doc.y += cardHeight + 14;
+    };
+
+    const drawTable = (section) => {
       const headers = Array.isArray(section.headers) ? section.headers : [];
       const rows = Array.isArray(section.rows) ? section.rows : [];
+
       if (!headers.length || !rows.length) {
-        doc.fontSize(10).text("No records");
-        doc.moveDown(0.5);
-        continue;
+        doc.font("Helvetica").fontSize(10).fillColor("#64748B").text("No records available.", left, doc.y);
+        doc.moveDown(0.8);
+        return;
       }
 
-      doc.fontSize(9).text(headers.join(" | "));
-      doc.moveDown(0.2);
-      for (const row of rows) {
-        const line = headers.map((header) => String(row?.[header] ?? "-")).join(" | ");
-        doc.text(line);
-      }
-      doc.moveDown(0.7);
+      const prettyHeader = (header) =>
+        String(header)
+          .replace(/([a-z])([A-Z])/g, "$1 $2")
+          .replace(/^./, (char) => char.toUpperCase());
+
+      const weights = headers.map((header) => {
+        if (/(sale|payment|status|customer|staff|plantType)/i.test(header)) return 1.5;
+        if (/(date)/i.test(header)) return 1.2;
+        return 1;
+      });
+      const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+      const colWidths = weights.map((weight) => (contentWidth / totalWeight) * weight);
+      const rowHeight = 22;
+
+      const drawHeader = () => {
+        ensureSpace(rowHeight + 6);
+        let x = left;
+        doc.save();
+        doc.roundedRect(left, doc.y, contentWidth, rowHeight, 6).fill("#EAF2FB");
+        headers.forEach((header, index) => {
+          doc.fillColor("#0F172A").font("Helvetica-Bold").fontSize(8).text(prettyHeader(header), x + 6, doc.y + 7, {
+            width: colWidths[index] - 12,
+            ellipsis: true
+          });
+          x += colWidths[index];
+        });
+        doc.restore();
+        doc.y += rowHeight + 4;
+      };
+
+      drawHeader();
+
+      rows.forEach((row, rowIndex) => {
+        ensureSpace(rowHeight + 4);
+        if (doc.y + rowHeight > pageHeight - doc.page.margins.bottom) {
+          doc.addPage();
+          drawHeader();
+        }
+        const bg = rowIndex % 2 === 0 ? "#FFFFFF" : "#F8FBFF";
+        doc.rect(left, doc.y, contentWidth, rowHeight).fill(bg);
+        let x = left;
+        headers.forEach((header, index) => {
+          doc.fillColor("#334155").font("Helvetica").fontSize(8.5).text(formatValue(row?.[header]), x + 6, doc.y + 7, {
+            width: colWidths[index] - 12,
+            ellipsis: true
+          });
+          x += colWidths[index];
+        });
+        doc.strokeColor("#E2E8F0").moveTo(left, doc.y + rowHeight).lineTo(right, doc.y + rowHeight).stroke();
+        doc.y += rowHeight;
+      });
+
+      doc.moveDown(0.8);
+    };
+
+    doc.roundedRect(left, 24, contentWidth, 92, 18).fill("#0F4C81");
+    doc.fillColor("#FFFFFF").font("Helvetica-Bold").fontSize(22).text(title || "Report", left + 20, 44);
+    doc.font("Helvetica").fontSize(10).fillColor("#D9EBFF").text("Analytics dashboard export", left + 20, 74);
+    doc.fillColor("#FFFFFF").fontSize(9).text(`Generated ${new Date().toISOString().slice(0, 10)}`, right - 110, 48, {
+      width: 90,
+      align: "right"
+    });
+    doc.y = 132;
+
+    drawMetaGrid();
+    drawSummaryCards();
+
+    for (const section of sections) {
+      drawSectionTitle(section.title || "Section");
+      drawTable(section);
     }
 
     doc.end();
