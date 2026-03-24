@@ -26,6 +26,7 @@ const createNurserySchema = Joi.object({
   code: Joi.string().trim().alphanum().min(3).max(20).uppercase().required(),
   status: Joi.string().valid("ACTIVE", "SUSPENDED").optional(),
   phoneNumber: Joi.string().trim().pattern(PHONE_PATTERN).allow("", null).optional(),
+  address: Joi.string().trim().max(250).allow("", null).optional(),
   settings: Joi.object({
     currency: Joi.string().trim().max(10).optional(),
     timezone: Joi.string().trim().max(120).optional(),
@@ -46,6 +47,7 @@ const updateNurserySchema = Joi.object({
   code: Joi.string().trim().alphanum().min(3).max(20).uppercase().optional(),
   status: Joi.string().valid("ACTIVE", "SUSPENDED").optional(),
   phoneNumber: Joi.string().trim().pattern(PHONE_PATTERN).allow("", null).optional(),
+  address: Joi.string().trim().max(250).allow("", null).optional(),
   settings: Joi.object({
     currency: Joi.string().trim().max(10).optional(),
     timezone: Joi.string().trim().max(120).optional(),

@@ -1,4 +1,5 @@
 const UPLOADS_ROUTE_PREFIX = "/uploads";
+const { buildAbsoluteUrl } = require("./publicUrl.util");
 
 const toPlain = (value) => {
   if (value && typeof value.toObject === "function") {
@@ -11,9 +12,7 @@ const buildFileUrl = (fileName, req) => {
   if (!fileName) return null;
 
   const path = `${UPLOADS_ROUTE_PREFIX}/${encodeURIComponent(String(fileName).replace(/^\/+/, ""))}`;
-  const host = req?.get?.("host");
-  if (!host) return path;
-  return `${req.protocol}://${host}${path}`;
+  return buildAbsoluteUrl(path, req);
 };
 
 const normalizeNurserySettingsResponse = (nursery, req) => {

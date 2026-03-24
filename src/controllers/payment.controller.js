@@ -1,13 +1,14 @@
 const statusCode = require("../enums/statusCode");
 const paymentService = require("../services/payment.service");
 const { removeUploadedFile } = require("../utils/uploadFile.util");
+const { normalizePaymentResponse } = require("../utils/paymentResponse.util");
 
 const createPayment = async (req, res, next) => {
   try {
     const payment = await paymentService.createPaymentRequest(req.body, req.user, req.file);
     res.status(statusCode.CREATED).json({
       message: "Payment created successfully",
-      data: payment
+      data: normalizePaymentResponse(payment, req)
     });
   } catch (err) {
     if (req.file?.filename) {
@@ -29,7 +30,7 @@ const verifyPayment = async (req, res, next) => {
 
     res.status(statusCode.OK).json({
       message: `Payment ${req.body.action === "ACCEPT" ? "verified" : "rejected"} successfully`,
-      data: payment
+      data: normalizePaymentResponse(payment, req)
     });
   } catch (err) {
     next(err);
@@ -49,7 +50,9 @@ const getPayments = async (req, res, next) => {
     const payments = await paymentService.getPayments(filters);
     res.status(statusCode.OK).json({
       message: "Payments retrieved successfully",
-      data: payments
+      data: Array.isArray(payments)
+        ? payments.map((payment) => normalizePaymentResponse(payment, req))
+        : payments
     });
   } catch (err) {
     next(err);

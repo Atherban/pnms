@@ -28,6 +28,10 @@ const nurserySchema = new mongoose.Schema(
       type: String,
       trim: true
     },
+    address: {
+      type: String,
+      trim: true
+    },
     settings: {
       currency: {
         type: String,

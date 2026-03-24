@@ -1,4 +1,5 @@
 const UPLOADS_ROUTE_PREFIX = "/uploads";
+const { buildAbsoluteUrl } = require("./publicUrl.util");
 
 const isPlainObject = (value) => {
   if (!value || typeof value !== "object") {
@@ -25,18 +26,7 @@ const buildImagePath = (fileName) => {
   return `${UPLOADS_ROUTE_PREFIX}/${encodeURIComponent(cleanedFileName)}`;
 };
 
-const buildImageUrl = (req, path) => {
-  if (!path) {
-    return null;
-  }
-
-  const host = req?.get?.("host");
-  if (!host) {
-    return path;
-  }
-
-  return `${req.protocol}://${host}${path}`;
-};
+const buildImageUrl = (req, path) => buildAbsoluteUrl(path, req);
 
 const mapImageMeta = (image, req) => {
   const imageValue = toPlainValue(image);
