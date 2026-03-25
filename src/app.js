@@ -32,6 +32,7 @@ const productFeedRoutes = require("./routes/productFeed.routes");
 
 
 const app = express();
+const UPLOADS_BASE_PATH = process.env.UPLOADS_BASE_PATH || "/var/www/pnms/uploads";
 
 app.use(helmet());
 app.disable("x-powered-by");
@@ -91,11 +92,7 @@ app.use("/api/product-feed", productFeedRoutes);
 
 
 // serve uploaded files
-if (!process.env.UPLOADS_BASE_PATH) {
-  throw new Error("UPLOADS_BASE_PATH is not defined in environment variables");
-}
-
-app.use("/uploads", express.static(process.env.UPLOADS_BASE_PATH));
+app.use("/uploads", express.static(UPLOADS_BASE_PATH));
 
 // global error handler (must be last)
 app.use(errorHandler);
