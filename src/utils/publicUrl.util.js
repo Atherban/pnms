@@ -6,7 +6,11 @@ const normalizeBaseUrl = (value) => {
   return value.trim().replace(/\/+$/, "");
 };
 
-const getConfiguredBaseUrl = () => normalizeBaseUrl(process.env.BASE_URL);
+const BASE_URL = process.env.BASE_URL || "http://127.0.0.1:3000";
+// console.log(BASE_URL);
+
+
+const getConfiguredBaseUrl = () => normalizeBaseUrl(BASE_URL);
 
 const buildAbsoluteUrl = (path, req) => {
   if (!path) {
@@ -33,4 +37,5 @@ const buildAbsoluteUrl = (path, req) => {
 module.exports = {
   buildAbsoluteUrl,
   getConfiguredBaseUrl,
+  BASE_URL
 };
